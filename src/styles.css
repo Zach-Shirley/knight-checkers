@@ -154,7 +154,6 @@ h2 {
   outline-offset: -3px;
 }
 
-.playable-piece-square::before,
 .selected-square::before,
 .forced-piece-square::before {
   position: absolute;
@@ -164,17 +163,10 @@ h2 {
   pointer-events: none;
 }
 
-.playable-piece-square::before {
-  border: 2px solid rgba(245, 197, 66, 0.55);
-}
-
-.selected-square::before {
+.selected-square::before,
+.forced-piece-square::before {
   border: 3px solid #f5c542;
   box-shadow: inset 0 0 0 2px rgba(24, 33, 31, 0.25);
-}
-
-.forced-piece-square::before {
-  border-color: #f5c542;
 }
 
 .piece-token {
@@ -276,16 +268,17 @@ h2 {
   animation: piece-hop 350ms linear both;
 }
 
-/* Crown for king pieces */
-.crown-mark {
+.king-mark {
   position: relative;
   z-index: 3;
-  width: 54%;
-  height: auto;
-  fill: #c9940c;
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.85rem;
+  font-weight: 900;
+  line-height: 1;
   filter:
-    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.7))
-    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.72))
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.46));
 }
 
 /* Standalone chess knight piece - no circular checker background */
@@ -685,6 +678,10 @@ h2 {
 
   .piece-token {
     width: 72%;
+  }
+
+  .king-mark {
+    font-size: 1.85rem;
   }
 
   .score-grid {

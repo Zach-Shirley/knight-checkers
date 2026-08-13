@@ -288,8 +288,9 @@ export function App() {
           <h2>Rules at a glance</h2>
         </div>
         <ul>
-          <li>Click one of your highlighted pieces, then click a highlighted destination.</li>
-          <li>Checkers move diagonally, jump diagonally, can chain jumps when available, and crown on the back row.</li>
+          <li>Click one of your pieces, then click a highlighted destination.</li>
+          <li>Checkers move diagonally, jump diagonally, can chain jumps when available, and become kings on the back row.</li>
+          <li>Kings are marked with a white chess king symbol and can move or jump diagonally in any direction.</li>
           <li>When forced captures are off, chained jumps are optional and can be ended after any jump.</li>
           <li>Knights move and capture like chess knights, rest for your next turn after moving, and can be jumped by checkers.</li>
           <li>The knight never has a forced capture. The toggle only controls whether checker captures are mandatory.</li>
@@ -375,17 +376,12 @@ function PieceToken({
       aria-hidden="true"
       onAnimationEnd={handleAnimationEnd}
     >
-      {piece.kind === "king" ? <CrownMark /> : null}
+      {piece.kind === "king" ? (
+        <span className="king-mark" aria-hidden="true">
+          ♚
+        </span>
+      ) : null}
     </span>
-  );
-}
-
-function CrownMark() {
-  return (
-    <svg className="crown-mark" viewBox="0 0 32 24" focusable="false" aria-hidden="true">
-      <path d="M2,21 L2,11 L5,8 L8,14 L11,8 L14,14 L17,8 L20,14 L23,8 L26,14 L30,11 L30,21 Z" />
-      <rect x="2" y="21" width="28" height="3" rx="1" />
-    </svg>
   );
 }
 
