@@ -22,6 +22,7 @@ import {
 } from "./game";
 import knightBlackSvg from "./assets/chess-knight-black.svg";
 import knightRedSvg from "./assets/chess-knight-red.svg";
+import kingSvg from "./assets/checker-king.svg";
 
 const rows = Array.from({ length: BOARD_SIZE }, (_, row) => row);
 const cols = Array.from({ length: BOARD_SIZE }, (_, col) => col);
@@ -290,7 +291,7 @@ export function App() {
         <ul>
           <li>Click one of your pieces, then click a highlighted destination.</li>
           <li>Checkers move diagonally, jump diagonally, can chain jumps when available, and become kings on the back row.</li>
-          <li>Kings are marked with a white chess king symbol and can move or jump diagonally in any direction.</li>
+          <li>Kings are marked with a white outlined king icon and can move or jump diagonally in any direction.</li>
           <li>When forced captures are off, chained jumps are optional and can be ended after any jump.</li>
           <li>Knights move and capture like chess knights, rest for your next turn after moving, and can be jumped by checkers.</li>
           <li>The knight never has a forced capture. The toggle only controls whether checker captures are mandatory.</li>
@@ -377,9 +378,7 @@ function PieceToken({
       onAnimationEnd={handleAnimationEnd}
     >
       {piece.kind === "king" ? (
-        <span className="king-mark" aria-hidden="true">
-          ♚
-        </span>
+        <img className="king-mark" src={kingSvg} alt="" draggable="false" />
       ) : null}
     </span>
   );

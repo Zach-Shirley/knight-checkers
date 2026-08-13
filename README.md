@@ -21,7 +21,7 @@ Then open `http://knight-checkers.127.0.0.1.sslip.io:4174/` or `http://127.0.0.1
 
 ## Deployment
 
-The temporary production build is deployed manually to `https://knight-checkers.vercel.app/`.
+Pushes to `main` run the GitHub Actions validation workflow and deploy to `https://knight-checkers.vercel.app/` through Vercel.
 
 ## Implemented rules
 
