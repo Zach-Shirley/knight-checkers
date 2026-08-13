@@ -19,6 +19,10 @@ npm run dev:local
 
 Then open `http://knight-checkers.127.0.0.1.sslip.io:4174/` or `http://127.0.0.1:4174/`.
 
+## Deployment
+
+The temporary production build is deployed manually to `https://knight-checkers.vercel.app/`.
+
 ## Implemented rules
 
 - Standard 8x8 checkers movement on dark squares.
