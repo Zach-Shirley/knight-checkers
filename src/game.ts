@@ -47,7 +47,7 @@ export type GameStatus =
   | {
       phase: "won";
       winner: Player;
-      reason: "captured-checkers" | "no-legal-moves";
+      reason: "captured-checkers" | "no-legal-moves" | "resignation";
       message: string;
     };
 
@@ -302,6 +302,25 @@ export function endOptionalJump(state: GameState): GameState {
     },
     movingPiece.piece.kind
   );
+}
+
+export function resignGame(state: GameState, player: Player = state.currentPlayer): GameState {
+  if (state.status.phase === "won") {
+    return state;
+  }
+
+  const winner = opponentOf(player);
+  return {
+    ...state,
+    forcedPieceId: null,
+    canEndJump: false,
+    status: {
+      phase: "won",
+      winner,
+      reason: "resignation",
+      message: `${playerName(winner)} wins by resignation`
+    }
+  };
 }
 
 export function getPieceCounts(state: GameState) {

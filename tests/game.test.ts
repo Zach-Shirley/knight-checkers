@@ -7,7 +7,8 @@ import {
   createInitialState,
   endOptionalJump,
   getLegalMoves,
-  getPieceCounts
+  getPieceCounts,
+  resignGame
 } from "../src/game";
 
 describe("Knight Checkers rules", () => {
@@ -155,6 +156,8 @@ describe("Knight Checkers rules", () => {
     expect(knightMove).toBeTruthy();
 
     const afterKnightMove = applyMove(state, knightMove!.id);
+    expect(afterKnightMove.knightCooldown.red).toBe(1);
+
     const blackMove = getLegalMoves(afterKnightMove)[0];
     const redRestTurn = applyMove(afterKnightMove, blackMove.id);
 
@@ -166,6 +169,8 @@ describe("Knight Checkers rules", () => {
     expect(checkerMove).toBeTruthy();
 
     const afterCheckerMove = applyMove(redRestTurn, checkerMove!.id);
+    expect(afterCheckerMove.knightCooldown.red).toBe(0);
+
     const blackReply = getLegalMoves(afterCheckerMove)[0];
     const redReadyTurn = applyMove(afterCheckerMove, blackReply.id);
 
@@ -296,6 +301,18 @@ describe("Knight Checkers rules", () => {
     expect(afterJump.status.phase).toBe("won");
     expect(afterJump.status.phase === "won" ? afterJump.status.winner : null).toBe("red");
     expect(getPieceCounts(afterJump).black.knights).toBe(1);
+  });
+
+  it("ends a local game when the current player resigns", () => {
+    const state = createInitialState();
+    const resigned = resignGame(state);
+
+    expect(resigned.status).toMatchObject({
+      phase: "won",
+      winner: "black",
+      reason: "resignation"
+    });
+    expect(getLegalMoves(resigned)).toEqual([]);
   });
 });
 

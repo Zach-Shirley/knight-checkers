@@ -1,0 +1,90 @@
+import type { GameRules, GameState, Player } from "../game";
+
+export type RoomStage = "waiting" | "playing" | "finished";
+
+export type PublicRoomPlayer = {
+  name: string;
+  player: Player;
+  connected: boolean;
+  isHost: boolean;
+};
+
+export type RoomChatMessage = {
+  id: string;
+  player: Player;
+  text: string;
+  sentAt: number;
+};
+
+export type RoomSnapshot = {
+  code: string;
+  stage: RoomStage;
+  rules: GameRules;
+  game: GameState;
+  players: Record<Player, PublicRoomPlayer | null>;
+  rematchVotes: Player[];
+  chat: RoomChatMessage[];
+  disconnectDeadlines: Record<Player, number | null>;
+  revision: number;
+};
+
+export type PlayerSession = {
+  roomCode: string;
+  player: Player;
+  reconnectToken: string;
+};
+
+export type RoomConnection = {
+  session: PlayerSession;
+  snapshot: RoomSnapshot;
+};
+
+export type ServerResponse<T> =
+  | { ok: true; data: T }
+  | { ok: false; message: string };
+
+export type ServerAck<T> = (response: ServerResponse<T>) => void;
+
+export type CreateRoomPayload = { name: string; rules: GameRules };
+export type JoinRoomPayload = { code: string; name: string };
+export type MatchmakingPayload = { name: string; rules: GameRules };
+export type QueueResult = { queued: boolean };
+
+export type ClientToServerEvents = {
+  "room:create": (
+    payload: CreateRoomPayload,
+    ack: ServerAck<RoomConnection>
+  ) => void;
+  "room:join": (
+    payload: JoinRoomPayload,
+    ack: ServerAck<RoomConnection>
+  ) => void;
+  "room:resume": (
+    session: PlayerSession,
+    ack: ServerAck<RoomConnection>
+  ) => void;
+  "room:move": (moveId: string, ack: ServerAck<null>) => void;
+  "room:end-jump": (ack: ServerAck<null>) => void;
+  "room:resign": (ack: ServerAck<null>) => void;
+  "room:rematch": (ack: ServerAck<null>) => void;
+  "room:chat": (message: string, ack: ServerAck<null>) => void;
+  "room:update-rules": (rules: GameRules, ack: ServerAck<null>) => void;
+  "room:leave": (ack: ServerAck<null>) => void;
+  "matchmaking:join": (
+    payload: MatchmakingPayload,
+    ack: ServerAck<QueueResult>
+  ) => void;
+  "matchmaking:leave": (ack: ServerAck<null>) => void;
+};
+
+export type ServerToClientEvents = {
+  "room:state": (snapshot: RoomSnapshot) => void;
+  "room:closed": (message: string) => void;
+  "matchmaking:matched": (connection: RoomConnection) => void;
+};
+
+export type SocketData = {
+  session?: PlayerSession;
+  queued?: boolean;
+  lastChatAt?: number;
+};
