@@ -331,7 +331,7 @@ function MultiplayerLobby({
           </div>
           <span className={`server-state ${connected ? "online" : "offline"}`}>
             <Radio aria-hidden="true" size={14} />
-            {connected ? "Local server online" : "Server offline"}
+            {connected ? "Multiplayer server online" : "Server offline"}
           </span>
         </header>
 
