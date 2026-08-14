@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: checkers-with-a-knight-server
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm run server:start
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: CLIENT_ORIGINS
+        value: https://knight-checkers.vercel.app

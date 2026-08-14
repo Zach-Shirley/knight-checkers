@@ -526,10 +526,13 @@ export function createGameServer(
     io,
     httpServer,
     rooms,
-    listen(port = Number(process.env.PORT) || DEFAULT_PORT) {
+    listen(
+      port = Number(process.env.PORT) || DEFAULT_PORT,
+      host = process.env.HOST || "127.0.0.1"
+    ) {
       return new Promise<number>((resolve, reject) => {
         httpServer.once("error", reject);
-        httpServer.listen(port, "127.0.0.1", () => {
+        httpServer.listen(port, host, () => {
           httpServer.off("error", reject);
           const address = httpServer.address();
           resolve(typeof address === "object" && address ? address.port : port);
@@ -701,10 +704,18 @@ const isDirectRun =
 
 if (isDirectRun) {
   const gameServer = createGameServer();
+  const host = process.env.HOST || "127.0.0.1";
+
+  function shutDown() {
+    gameServer.close().finally(() => process.exit(0));
+  }
+
+  process.once("SIGTERM", shutDown);
+  process.once("SIGINT", shutDown);
   gameServer
     .listen()
     .then((port) => {
-      process.stdout.write(`Knight Checkers game server listening on 127.0.0.1:${port}\n`);
+      process.stdout.write(`Knight Checkers game server listening on ${host}:${port}\n`);
     })
     .catch((error: unknown) => {
       process.stderr.write(`${String(error)}\n`);

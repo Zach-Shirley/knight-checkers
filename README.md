@@ -41,11 +41,15 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 - Per-tab reconnect tokens allow a player to refresh without taking over the other tab's seat.
 - Disconnects pause the match for 30 seconds. Reconnecting cancels the deadline; otherwise the server records a resignation.
 - Room snapshots include capped chat history and rematch votes so every connected player sees the same conversation and match state.
-- Rooms are currently ephemeral and disappear when the game server restarts. Persistent accounts, ratings, and cross-device hosting are intentionally deferred until a backend is selected.
+- Rooms are currently ephemeral and disappear when the game server restarts. Persistent accounts, ratings, and multi-instance scaling are intentionally deferred until shared storage is added.
 
 ## Deployment
 
 Pushes to `main` run the GitHub Actions validation workflow and deploy to `https://knight-checkers.vercel.app/` through Vercel.
+
+The multiplayer server is configured for Render through `render.yaml`. It uses a paid Starter web service, deploys from every commit to `main`, listens on Render's assigned `PORT`, exposes `/health`, and accepts Socket.IO connections from the production Vercel origin. Set the Vercel production build variable `VITE_GAME_SERVER_URL` to the service's public `https://...onrender.com` URL after the Render service is created.
+
+One server process supports any number of simultaneous room codes within the service's memory limit. Rooms are held in memory, so a service restart ends active matches; persistent room recovery and horizontal scaling will require shared state such as Redis later.
 
 ## Implemented rules
 
