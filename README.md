@@ -31,7 +31,7 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 
 - `/` provides the game-mode menu, rules, and local-game setup.
 - `/local` runs the complete pass-and-play game with move history and standard game actions.
-- `/multiplayer` provides private room creation, join codes, local quick matching, reconnect support, room chat, resignations, a 30-second disconnect grace period, visible departure states, and rematches.
+- `/multiplayer` provides private room creation, join codes, quick matching, reconnect support, room chat, resignations, a 30-second disconnect grace period, visible departure states, and rematches.
 
 ## Multiplayer architecture
 

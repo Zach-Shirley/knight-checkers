@@ -327,7 +327,7 @@ function MultiplayerLobby({
           <div className="multiplayer-icon" aria-hidden="true"><Users size={29} /></div>
           <div>
             <p className="section-kicker">Online play</p>
-            <h1 id="multiplayer-title">Play from two tabs</h1>
+            <h1 id="multiplayer-title">Play online</h1>
           </div>
           <span className={`server-state ${connected ? "online" : "offline"}`}>
             <Radio aria-hidden="true" size={14} />
@@ -409,7 +409,7 @@ function MultiplayerLobby({
         <div className="quick-match-row">
           <div>
             <strong>Quick match</strong>
-            <span>Pair with another waiting local tab.</span>
+            <span>Pair with another waiting player.</span>
           </div>
           <button
             className="button secondary"
@@ -489,7 +489,7 @@ function WaitingRoom({
           <span className="toggle-track" aria-hidden="true" />
         </label>
 
-        {!connected ? <p className="lobby-error" role="alert">Reconnecting to the local server...</p> : null}
+        {!connected ? <p className="lobby-error" role="alert">Reconnecting to multiplayer server...</p> : null}
         {error ? <p className="lobby-error" role="alert">{error}</p> : null}
       </section>
     </main>
