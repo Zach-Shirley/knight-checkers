@@ -999,6 +999,22 @@ h2 {
   filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.28)) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.42));
 }
 
+/* Rendered sprites carry their own lighting; give them only a soft contact shadow. */
+.knight-piece.rendered {
+  width: 90%;
+}
+
+.knight-piece.rendered .knight-mark,
+.knight-piece.rendered.ready .knight-mark,
+.knight-piece.rendered.resting .knight-mark {
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+}
+
+.king-mark.rendered {
+  width: 70%;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+}
+
 .move-target {
   position: absolute;
   z-index: 1;

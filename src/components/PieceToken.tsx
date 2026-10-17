@@ -1,9 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Piece } from "../game";
-import knightBlackSvg from "../assets/chess-knight-black.svg";
-import knightGraySvg from "../assets/chess-knight-gray.svg";
-import knightRedSvg from "../assets/chess-knight-red.svg";
-import kingSvg from "../assets/checker-king.svg";
+import { pieceArt } from "../pieceArt";
 
 export type PieceAnimation = {
   id: number;
@@ -39,15 +36,11 @@ export function PieceToken({
   };
 
   if (piece.kind === "knight") {
-    const source = resting
-      ? knightGraySvg
-      : piece.player === "red"
-        ? knightRedSvg
-        : knightBlackSvg;
+    const source = pieceArt.knight[resting ? "gray" : piece.player];
 
     return (
       <span
-        className={`knight-piece ${piece.player} ${resting ? "resting" : "ready"} ${animationClass}`.trim()}
+        className={`knight-piece ${piece.player} ${resting ? "resting" : "ready"} ${pieceArt.rendered ? "rendered" : ""} ${animationClass}`.replace(/\s+/g, " ").trim()}
         style={animation?.style}
         aria-hidden="true"
         onAnimationEnd={handleAnimationEnd}
@@ -65,7 +58,7 @@ export function PieceToken({
       onAnimationEnd={handleAnimationEnd}
     >
       {piece.kind === "king" ? (
-        <img className="king-mark" src={kingSvg} alt="" draggable="false" />
+        <img className={`king-mark ${pieceArt.rendered ? "rendered" : ""}`.trim()} src={pieceArt.crown} alt="" draggable="false" />
       ) : null}
     </span>
   );

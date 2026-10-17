@@ -6,3 +6,4 @@ dev-local*.log
 CLAUDE_TASK.md
 .env*
 .claude/
+art/out/
