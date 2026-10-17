@@ -31,6 +31,7 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 
 - `/` provides the game-mode menu, rules, and local-game setup.
 - `/local` runs the complete pass-and-play game with move history and standard game actions.
+- `/bot` plays against the computer at Easy, Medium or Hard. The bot (`src/bot.ts`) is an alpha-beta search over the shared rules engine and runs in a web worker, so it works offline.
 - `/multiplayer` provides private room creation, join codes, quick matching, reconnect support, quick-message room chat, resignations, a 30-second disconnect grace period, visible departure states, and rematches.
 
 ## Multiplayer architecture
@@ -39,6 +40,8 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 - Clients submit move IDs; the server validates them through the shared rules engine before broadcasting a new snapshot.
 - Accepted moves animate locally from their source square after server validation, keeping both board perspectives visually consistent without making the client authoritative.
 - Per-tab reconnect tokens allow a player to refresh without taking over the other tab's seat.
+- Players never type a name. Each device gets a permanent generated name (like `SwiftFalcon27`) and a random player ID (`src/playerIdentity.ts`), kept for ratings and profiles later. The server shows only generated names and never sends player IDs to other players.
+- During quick match a player can play a bot while waiting (a found match takes over immediately) or play a bot instead.
 - Disconnects pause the match for 30 seconds. Reconnecting cancels the deadline; otherwise the server records a resignation.
 - Room snapshots include capped chat history and rematch votes so every connected player sees the same conversation and match state.
 - Chat is limited to a fixed set of quick messages (`QUICK_CHAT_MESSAGES` in `src/multiplayer/protocol.ts`); the server rejects anything else. That avoids moderating free text and the App Store's user-generated-content rules.

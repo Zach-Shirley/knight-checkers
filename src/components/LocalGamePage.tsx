@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
+  Bot,
   BookOpen,
   Home,
   RotateCcw,
@@ -21,11 +22,15 @@ import {
   getLegalMoves,
   getPieceAt,
   isDarkSquare,
+  opponentOf,
   pieceName,
   playerName,
   squareName,
   updateGameRules
 } from "../game";
+import { BOT_LEVELS, type BotLevel } from "../bot";
+import { requestBotAction } from "../botClient";
+import { getPlayerIdentity } from "../playerIdentity";
 import { Modal } from "./Modal";
 import { PieceToken, type PieceAnimation } from "./PieceToken";
 
@@ -35,12 +40,21 @@ const CELL_DISTANCE_IN_TOKEN_PERCENT = 138.889;
 
 type GameDialog = "new-game" | "settings" | "rules" | null;
 
+// Pause before the bot moves so its reply reads as a move, not a flicker.
+const BOT_MIN_THINK_MS = 650;
+
+export type BotOpponent = { player: Player; level: BotLevel };
+
 type LocalGamePageProps = {
   initialRules: GameRules;
   onExit: () => void;
+  // Without a bot this is pass-and-play.
+  bot?: BotOpponent;
+  // Replaces the panel's "Pass & play" / "Vs bot" label, e.g. while a quick match is searching.
+  kicker?: string;
 };
 
-export function LocalGamePage({ initialRules, onExit }: LocalGamePageProps) {
+export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePageProps) {
   const [history, setHistory] = useState(() => [createInitialState(initialRules)]);
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
   const [pieceAnimation, setPieceAnimation] = useState<PieceAnimation | null>(null);
@@ -53,6 +67,30 @@ export function LocalGamePage({ initialRules, onExit }: LocalGamePageProps) {
   const hasForcedCheckerCapture =
     state.rules.forceCheckerCaptures &&
     legalMoves.some((move) => move.pieceKind !== "knight" && move.captures.length > 0);
+  const humanPlayer = bot ? opponentOf(bot.player) : null;
+  const isBotTurn = Boolean(bot && state.status.phase === "playing" && state.currentPlayer === bot.player);
+
+  useEffect(() => {
+    if (!bot || !isBotTurn) return;
+    let cancelled = false;
+    const started = performance.now();
+    requestBotAction(state, bot.level).then((action) => {
+      const wait = Math.max(0, BOT_MIN_THINK_MS - (performance.now() - started));
+      window.setTimeout(() => {
+        if (cancelled || !action) return;
+        if (action.type === "end-jump") {
+          endJumpTurn();
+          return;
+        }
+        const move = legalMoves.find((candidate) => candidate.id === action.moveId);
+        if (move) playMove(move);
+      }, wait);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // playMove/endJumpTurn only read `state`, which is a dependency.
+  }, [bot, isBotTurn, state, legalMoves]);
 
   useEffect(() => {
     if (state.forcedPieceId) {
@@ -73,7 +111,7 @@ export function LocalGamePage({ initialRules, onExit }: LocalGamePageProps) {
   }
 
   function handleSquareClick(square: Square) {
-    if (state.status.phase === "won") return;
+    if (state.status.phase === "won" || isBotTurn) return;
 
     const destinationMove = selectedMoves.find(
       (move) => move.to.row === square.row && move.to.col === square.col
@@ -98,8 +136,15 @@ export function LocalGamePage({ initialRules, onExit }: LocalGamePageProps) {
       if (currentHistory.length <= 1) return currentHistory;
 
       const currentRules = currentHistory[currentHistory.length - 1].rules;
-      const previousState = updateGameRules(currentHistory[currentHistory.length - 2], currentRules);
-      return [...currentHistory.slice(0, currentHistory.length - 2), previousState];
+      let target = currentHistory.length - 2;
+      // Against a bot, step back past its reply to the start of the human's last turn.
+      if (humanPlayer) {
+        while (target > 0 && (currentHistory[target].currentPlayer !== humanPlayer || currentHistory[target].forcedPieceId)) {
+          target--;
+        }
+      }
+      const previousState = updateGameRules(currentHistory[target], currentRules);
+      return [...currentHistory.slice(0, target), previousState];
     });
     setSelectedPieceId(null);
     setPieceAnimation(null);
@@ -135,16 +180,18 @@ export function LocalGamePage({ initialRules, onExit }: LocalGamePageProps) {
     setPieceAnimation(null);
   }
 
-  const stateMessage = getStateMessage(state, hasForcedCheckerCapture);
+  const stateMessage = isBotTurn ? "The bot is thinking..." : getStateMessage(state, hasForcedCheckerCapture);
+  const botName = bot ? `${BOT_LEVELS[bot.level].label} bot` : null;
 
   return (
     <main className="game-page">
       <section className="game-workspace" aria-label="Local Knight Checkers game">
         <div className="board-column">
           <PlayerBar
-            name="Player 2"
+            name={botName ?? "Player 2"}
             player="black"
             active={state.status.phase === "playing" && state.currentPlayer === "black"}
+            isBot={Boolean(bot)}
           />
 
           <div className="board-frame">
@@ -207,7 +254,7 @@ export function LocalGamePage({ initialRules, onExit }: LocalGamePageProps) {
           </div>
 
           <PlayerBar
-            name="Player 1"
+            name={bot ? getPlayerIdentity().name : "Player 1"}
             player="red"
             active={state.status.phase === "playing" && state.currentPlayer === "red"}
             isYou
@@ -220,8 +267,8 @@ export function LocalGamePage({ initialRules, onExit }: LocalGamePageProps) {
               <Home aria-hidden="true" size={20} />
             </button>
             <div>
-              <p className="section-kicker">Pass &amp; play</p>
-              <strong>Local game</strong>
+              <p className="section-kicker">{kicker ?? (bot ? "Vs bot" : "Pass & play")}</p>
+              <strong>{botName ?? "Local game"}</strong>
             </div>
             <button
               className="icon-button panel-settings"
@@ -240,7 +287,7 @@ export function LocalGamePage({ initialRules, onExit }: LocalGamePageProps) {
               <p>{state.status.phase === "won" ? "Game over" : `${playerName(state.currentPlayer)} to move`}</p>
               <span>{stateMessage}</span>
             </div>
-            {state.canEndJump ? (
+            {state.canEndJump && !isBotTurn ? (
               <button className="text-button" type="button" onClick={endJumpTurn}>End turn</button>
             ) : null}
           </section>
@@ -327,16 +374,18 @@ function PlayerBar({
   name,
   player,
   active,
-  isYou = false
+  isYou = false,
+  isBot = false
 }: {
   name: string;
   player: Player;
   active: boolean;
   isYou?: boolean;
+  isBot?: boolean;
 }) {
   return (
     <div className={`player-bar ${player} ${active ? "active" : ""}`}>
-      <span className="player-avatar" aria-hidden="true"><UserRound size={22} /></span>
+      <span className="player-avatar" aria-hidden="true">{isBot ? <Bot size={22} /> : <UserRound size={22} />}</span>
       <div className="player-identity">
         <strong>{name}</strong>
         {isYou ? <span>You</span> : null}

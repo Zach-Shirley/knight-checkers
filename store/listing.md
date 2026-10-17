@@ -8,7 +8,7 @@
 | Category | Games → Board |
 | Age rating | 4+ / Everyone (no free-form chat or user-generated text in the app build) |
 | Price | Free, no in-app purchases |
-| Privacy label (iOS) | Data Not Collected |
+| Privacy label (iOS) | Data Not Collected. The random player ID only lives in server memory for the length of a room. Once ratings store it, declare "Identifiers → User ID", not linked to identity |
 | Data safety (Google) | No data collected or shared |
 | Privacy policy URL | [LLC SITE]/knight-checkers/privacy |
 | Support URL | [LLC SITE]/knight-checkers/support |
@@ -19,8 +19,9 @@ Knight Checkers is classic American checkers with one twist: each side gets a ch
 
 The knight jumps in an L like it does in chess, captures whatever it lands on and is never forced to take. After it moves it has to rest for a turn, so you have to pick your moment.
 
+- Play the bot on Easy, Medium or Hard, even offline
 - Pass & Play on one phone
-- Online play with private room codes or quick match
+- Online play with private room codes or quick match, and a bot to play while you wait
 - Optional forced captures for checkers
 - Multi-jumps and crowned kings, just like regular checkers
 - No accounts, no ads, no tracking

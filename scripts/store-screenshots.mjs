@@ -34,6 +34,22 @@ async function appPage() {
 const square = (page, name) => page.locator(`button[aria-label^="${name},"]`);
 const settle = (page) => page.waitForTimeout(700);
 
+// Plays the first legal move found for Red (the bot's replies vary, so moves can't be scripted).
+async function playAnyMove(page) {
+  const reds = await page.locator('button[aria-label*="Red "]:not([aria-label*="resting"])').evaluateAll((els) =>
+    els.map((el) => el.getAttribute("aria-label").split(",")[0])
+  );
+  for (const from of reds) {
+    await square(page, from).click();
+    await page.waitForTimeout(60);
+    const destination = page.locator('button[aria-label*="destination"]');
+    if (await destination.count()) {
+      await destination.first().click();
+      return;
+    }
+  }
+}
+
 async function shot(page, name) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await settle(page);
@@ -57,10 +73,17 @@ for (const move of OPENING) {
 await square(home, "h8").click(); // Red's king, to show its moves
 await shot(home, "2-local-game");
 
-// 3. Rules
+// 3. A game against the bot, a few moves in
 await home.goto(`${APP}/`);
-await home.getByText("How to play").click();
-await shot(home, "3-rules");
+await home.getByText("Play a Bot").click();
+await home.getByRole("button", { name: "Start game" }).click();
+for (let turn = 0; turn < 3; turn++) {
+  const before = Number(await home.locator(".moves-heading span").innerText());
+  await playAnyMove(home);
+  await home.waitForFunction((n) => Number(document.querySelector(".moves-heading span")?.textContent) >= n + 2, before, { timeout: 8000 });
+  await home.waitForTimeout(700);
+}
+await shot(home, "3-bot-game");
 
 // 4. Online: the app player hosts a private room, a web player joins
 const host = await appPage();

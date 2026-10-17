@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BookOpen, Bot, Gamepad2, Users } from "lucide-react";
-import { isNativeApp } from "../platform";
+import { BOT_LEVELS, type BotLevel } from "../bot";
 import {
   BOARD_SIZE,
   type GameRules,
@@ -19,14 +19,16 @@ const previewState = createPreviewState();
 
 type HomePageProps = {
   onStartLocal: (rules: GameRules) => void;
+  onStartBot: (level: BotLevel, rules: GameRules) => void;
   onOpenMultiplayer: () => void;
 };
 
 type HomeDialog = "new-game" | "rules" | "bots" | null;
 
-export function HomePage({ onStartLocal, onOpenMultiplayer }: HomePageProps) {
+export function HomePage({ onStartLocal, onStartBot, onOpenMultiplayer }: HomePageProps) {
   const [dialog, setDialog] = useState<HomeDialog>(null);
   const [forceCheckerCaptures, setForceCheckerCaptures] = useState(true);
+  const [botLevel, setBotLevel] = useState<BotLevel>("medium");
 
   function beginLocalGame() {
     onStartLocal({ forceCheckerCaptures });
@@ -73,16 +75,13 @@ export function HomePage({ onStartLocal, onOpenMultiplayer }: HomePageProps) {
               <small>Rooms and matchmaking</small>
             </span>
           </button>
-          {/* App review rejects placeholder features, so the unbuilt bot mode stays web-only. */}
-          {isNativeApp ? null : (
-            <button className="menu-button quiet" type="button" onClick={() => setDialog("bots")}>
-              <Bot aria-hidden="true" size={23} />
-              <span>
-                <strong>Play a Bot</strong>
-                <small>Practice on your own</small>
-              </span>
-            </button>
-          )}
+          <button className="menu-button" type="button" onClick={() => setDialog("bots")}>
+            <Bot aria-hidden="true" size={23} />
+            <span>
+              <strong>Play a Bot</strong>
+              <small>Easy, medium or hard</small>
+            </span>
+          </button>
         </div>
 
         <button className="rules-link" type="button" onClick={() => setDialog("rules")}>
@@ -137,14 +136,31 @@ export function HomePage({ onStartLocal, onOpenMultiplayer }: HomePageProps) {
       ) : null}
 
       {dialog === "bots" ? (
-        <Modal
-          title="Bots are not available yet"
-          description="Computer opponents are planned, but this version is focused on local play."
-          onClose={() => setDialog(null)}
-        >
-          <div className="modal-actions single-action">
-            <button className="button primary" type="button" data-autofocus onClick={() => setDialog(null)}>
-              Back to menu
+        <Modal title="Play a bot" description="You play Red and move first." onClose={() => setDialog(null)}>
+          <BotLevelPicker value={botLevel} onChange={setBotLevel} />
+          <label className="setting-toggle">
+            <span>
+              <strong>Force checker captures</strong>
+              <small>When a checker can jump, it must.</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={forceCheckerCaptures}
+              onChange={(event) => setForceCheckerCaptures(event.currentTarget.checked)}
+            />
+            <span className="toggle-track" aria-hidden="true" />
+          </label>
+          <div className="modal-actions">
+            <button className="button secondary" type="button" onClick={() => setDialog(null)}>
+              Cancel
+            </button>
+            <button
+              className="button primary"
+              type="button"
+              data-autofocus
+              onClick={() => onStartBot(botLevel, { forceCheckerCaptures })}
+            >
+              Start game
             </button>
           </div>
         </Modal>
@@ -214,4 +230,24 @@ function createPreviewState() {
       message: "Black to move"
     }
   };
+}
+
+export function BotLevelPicker({ value, onChange }: { value: BotLevel; onChange: (level: BotLevel) => void }) {
+  return (
+    <div className="bot-levels" role="radiogroup" aria-label="Bot difficulty">
+      {(Object.keys(BOT_LEVELS) as BotLevel[]).map((level) => (
+        <button
+          key={level}
+          type="button"
+          role="radio"
+          aria-checked={value === level}
+          className={value === level ? "active" : ""}
+          onClick={() => onChange(level)}
+        >
+          <strong>{BOT_LEVELS[level].label}</strong>
+          <small>{BOT_LEVELS[level].description}</small>
+        </button>
+      ))}
+    </div>
+  );
 }

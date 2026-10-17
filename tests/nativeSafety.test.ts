@@ -20,7 +20,7 @@ function snapshotWith(chatTexts: string[]): RoomSnapshot {
   };
 }
 
-describe("app-store build text filter", () => {
+describe("free-text filter", () => {
   it("keeps quick-chat phrases and drops free-form chat", () => {
     const filtered = withoutFreeText(snapshotWith([QUICK_CHAT_MESSAGES[0], "free text from the web", QUICK_CHAT_MESSAGES[1]]));
     expect(filtered.chat.map((message) => message.text)).toEqual([QUICK_CHAT_MESSAGES[0], QUICK_CHAT_MESSAGES[1]]);
@@ -31,5 +31,11 @@ describe("app-store build text filter", () => {
     expect(filtered.players.red?.name).toBe("Red player");
     expect(filtered.players.red?.connected).toBe(true);
     expect(filtered.players.black).toBeNull();
+  });
+
+  it("keeps generated display names", () => {
+    const snapshot = snapshotWith([]);
+    snapshot.players.red = { ...snapshot.players.red!, name: "SwiftFalcon27" };
+    expect(withoutFreeText(snapshot).players.red?.name).toBe("SwiftFalcon27");
   });
 });

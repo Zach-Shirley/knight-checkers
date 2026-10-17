@@ -49,19 +49,32 @@ import {
 } from "../multiplayer/protocol";
 import { withoutFreeText } from "../multiplayer/nativeSafety";
 import { getMultiplayerSocket } from "../multiplayer/socket";
-import { isNativeApp } from "../platform";
+import { type BotLevel } from "../bot";
+import { getPlayerIdentity } from "../playerIdentity";
+import { BotLevelPicker } from "./HomePage";
+import { LocalGamePage } from "./LocalGamePage";
 import { Modal } from "./Modal";
 import { PieceToken, type PieceAnimation } from "./PieceToken";
 
 const SESSION_KEY = "knight-checkers:online-session:v1";
-const NAME_KEY = "knight-checkers:player-name:v1";
 const CELL_DISTANCE_IN_TOKEN_PERCENT = 138.889;
 const boardIndexes = Array.from({ length: BOARD_SIZE }, (_, index) => index);
 
 type LobbyMode = "create" | "join";
 type GameDialog = "rules" | "resign" | "leave" | null;
 
-export function MultiplayerPage({ onExit }: { onExit: () => void }) {
+export function MultiplayerPage({
+  onExit,
+  onPlayBot
+}: {
+  onExit: () => void;
+  onPlayBot: (level: BotLevel, rules: GameRules) => void;
+}) {
+  const identity = useMemo(getPlayerIdentity, []);
+  // While quick match searches, the player can play a bot; a found match replaces that game.
+  const [waitingBot, setWaitingBot] = useState<{ level: BotLevel; rules: GameRules; session: number } | null>(null);
+  const [queueRules, setQueueRules] = useState<GameRules>({ forceCheckerCaptures: true });
+  const [matchNotice, setMatchNotice] = useState(false);
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
   const [session, setSession] = useState<PlayerSession | null>(() => readSession());
   const [connected, setConnected] = useState(false);
@@ -72,10 +85,14 @@ export function MultiplayerPage({ onExit }: { onExit: () => void }) {
   const socket = useMemo(getMultiplayerSocket, []);
 
   const showSnapshot = useCallback((next: RoomSnapshot) => {
-    setSnapshot(isNativeApp ? withoutFreeText(next) : next);
+    setSnapshot(withoutFreeText(next));
   }, []);
 
   const acceptConnection = useCallback((connection: RoomConnection) => {
+    setWaitingBot((current) => {
+      if (current) setMatchNotice(true);
+      return null;
+    });
     writeSession(connection.session);
     setSession(connection.session);
     showSnapshot(connection.snapshot);
@@ -167,34 +184,36 @@ export function MultiplayerPage({ onExit }: { onExit: () => void }) {
     });
   }
 
-  function createRoom(name: string, rules: GameRules) {
-    rememberName(name);
+  function createRoom(rules: GameRules) {
     runRoomRequest<RoomConnection>(
-      (ack) => socket.emit("room:create", { name, rules }, ack),
+      (ack) => socket.emit("room:create", { name: identity.name, playerId: identity.id, rules }, ack),
       acceptConnection
     );
   }
 
-  function joinRoom(name: string, code: string) {
-    rememberName(name);
+  function joinRoom(code: string) {
     runRoomRequest<RoomConnection>(
-      (ack) => socket.emit("room:join", { name, code }, ack),
+      (ack) => socket.emit("room:join", { name: identity.name, playerId: identity.id, code }, ack),
       acceptConnection
     );
   }
 
-  function joinQueue(name: string, rules: GameRules) {
-    rememberName(name);
+  function joinQueue(rules: GameRules) {
+    setQueueRules(rules);
     runRoomRequest<QueueResult>(
-      (ack) => socket.emit("matchmaking:join", { name, rules }, ack),
+      (ack) => socket.emit("matchmaking:join", { name: identity.name, playerId: identity.id, rules }, ack),
       (result) => setQueued(result.queued)
     );
   }
 
-  function cancelQueue() {
+  function cancelQueue(onCancelled?: () => void) {
     runRoomRequest(
       (ack) => socket.emit("matchmaking:leave", ack),
-      () => setQueued(false)
+      () => {
+        setQueued(false);
+        setWaitingBot(null);
+        onCancelled?.();
+      }
     );
   }
 
@@ -244,19 +263,35 @@ export function MultiplayerPage({ onExit }: { onExit: () => void }) {
     }
 
     return (
-      <OnlineGame
-        snapshot={snapshot}
-        session={session}
-        connected={connected}
-        error={error}
-        onError={setError}
-        onLeave={() => leaveRoom(true)}
+      <>
+        {matchNotice ? <MatchFoundNotice onDone={() => setMatchNotice(false)} /> : null}
+        <OnlineGame
+          snapshot={snapshot}
+          session={session}
+          connected={connected}
+          error={error}
+          onError={setError}
+          onLeave={() => leaveRoom(true)}
+        />
+      </>
+    );
+  }
+
+  if (queued && waitingBot) {
+    return (
+      <LocalGamePage
+        key={`waiting-bot-${waitingBot.session}`}
+        initialRules={waitingBot.rules}
+        bot={{ player: "black", level: waitingBot.level }}
+        kicker="Still searching for a match"
+        onExit={() => setWaitingBot(null)}
       />
     );
   }
 
   return (
     <MultiplayerLobby
+      playerName={identity.name}
       connected={connected}
       busy={busy}
       queued={queued}
@@ -265,12 +300,27 @@ export function MultiplayerPage({ onExit }: { onExit: () => void }) {
       onCreate={createRoom}
       onJoin={joinRoom}
       onQueue={joinQueue}
-      onCancelQueue={cancelQueue}
+      onCancelQueue={() => cancelQueue()}
+      onBotWhileWaiting={(level) => setWaitingBot({ level, rules: queueRules, session: Date.now() })}
+      onBotInstead={(level) => cancelQueue(() => onPlayBot(level, queueRules))}
     />
   );
 }
 
+function MatchFoundNotice({ onDone }: { onDone: () => void }) {
+  useEffect(() => {
+    const timer = window.setTimeout(onDone, 4500);
+    return () => window.clearTimeout(timer);
+  }, [onDone]);
+  return (
+    <p className="match-toast" role="status">
+      Match found! Your bot game was closed.
+    </p>
+  );
+}
+
 function MultiplayerLobby({
+  playerName: ownName,
   connected,
   busy,
   queued,
@@ -279,29 +329,34 @@ function MultiplayerLobby({
   onCreate,
   onJoin,
   onQueue,
-  onCancelQueue
+  onCancelQueue,
+  onBotWhileWaiting,
+  onBotInstead
 }: {
+  playerName: string;
   connected: boolean;
   busy: boolean;
   queued: boolean;
   error: string | null;
   onExit: () => void;
-  onCreate: (name: string, rules: GameRules) => void;
-  onJoin: (name: string, code: string) => void;
-  onQueue: (name: string, rules: GameRules) => void;
+  onCreate: (rules: GameRules) => void;
+  onJoin: (code: string) => void;
+  onQueue: (rules: GameRules) => void;
   onCancelQueue: () => void;
+  onBotWhileWaiting: (level: BotLevel) => void;
+  onBotInstead: (level: BotLevel) => void;
 }) {
   const [mode, setMode] = useState<LobbyMode>("create");
-  const [name, setName] = useState(() => readName());
   const [code, setCode] = useState("");
   const [forcedCaptures, setForcedCaptures] = useState(true);
+  const [botLevel, setBotLevel] = useState<BotLevel>("medium");
 
   function submit(event: FormEvent) {
     event.preventDefault();
     if (mode === "create") {
-      onCreate(name, { forceCheckerCaptures: forcedCaptures });
+      onCreate({ forceCheckerCaptures: forcedCaptures });
     } else {
-      onJoin(name, code);
+      onJoin(code);
     }
   }
 
@@ -312,7 +367,20 @@ function MultiplayerLobby({
           <LoaderCircle className="queue-spinner" aria-hidden="true" size={34} />
           <p className="section-kicker">Quick match</p>
           <h1>Looking for a player</h1>
-          <p>Keep this tab open. A local match will begin as soon as another player queues with the same rules.</p>
+          <p>You will be matched with the next player who searches with the same capture rule.</p>
+          <div className="queue-bot">
+            <strong>Play a bot meanwhile?</strong>
+            <BotLevelPicker value={botLevel} onChange={setBotLevel} />
+            <div className="queue-bot-actions">
+              <button className="button primary" type="button" onClick={() => onBotWhileWaiting(botLevel)}>
+                Play while I wait
+              </button>
+              <button className="button secondary" type="button" onClick={() => onBotInstead(botLevel)} disabled={busy}>
+                Play a bot instead
+              </button>
+            </div>
+            <small>While you wait, a found match takes over right away.</small>
+          </div>
           <button className="button secondary" type="button" onClick={onCancelQueue} disabled={busy}>
             Cancel search
           </button>
@@ -363,20 +431,9 @@ function MultiplayerLobby({
         </div>
 
         <form className="lobby-form" onSubmit={submit}>
-          {/* The app build hides player-typed names, so it doesn't ask for one. */}
-          {isNativeApp ? null : (
-            <label className="field-label">
-              Display name
-              <input
-                type="text"
-                value={name}
-                maxLength={24}
-                autoComplete="nickname"
-                placeholder="Guest"
-                onChange={(event) => setName(event.currentTarget.value)}
-              />
-            </label>
-          )}
+          <p className="playing-as">
+            Playing as <strong>{ownName}</strong>
+          </p>
 
           {mode === "create" ? (
             <label className="setting-toggle compact-toggle">
@@ -424,7 +481,7 @@ function MultiplayerLobby({
             className="button secondary"
             type="button"
             disabled={busy || !connected}
-            onClick={() => onQueue(name, { forceCheckerCaptures: forcedCaptures })}
+            onClick={() => onQueue({ forceCheckerCaptures: forcedCaptures })}
           >
             Find match
           </button>
@@ -1116,14 +1173,6 @@ function squareAriaLabel(square: Square, piece: Piece | null, move: Move | undef
 
 function normalizeRoomCode(code: string) {
   return code.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-}
-
-function rememberName(name: string) {
-  sessionStorage.setItem(NAME_KEY, name.trim().slice(0, 24));
-}
-
-function readName() {
-  return sessionStorage.getItem(NAME_KEY) ?? "";
 }
 
 function writeSession(session: PlayerSession) {

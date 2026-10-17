@@ -10,18 +10,20 @@ Knight Checkers is made by [LLC LEGAL NAME] ("we"). This policy covers the Knigh
 
 **Nothing that identifies you.** Knight Checkers has no accounts, no ads, no analytics and no tracking.
 
-**Pass & Play** runs entirely on your device. Nothing is sent anywhere.
+**Pass & Play** and **games against the bot** run entirely on your device. Nothing is sent anywhere.
+
+The first time you open the game it creates a random player ID and a generated display name (like "SwiftFalcon27") and keeps them on your device. They are not linked to your real name, email or any account.
 
 **Online play** connects to our game server so two players can share a game. While you are in a room the server holds:
 
 - the room code, the game position and the moves played
 - a random reconnect code that lets you rejoin after a dropped connection
-- quick-chat messages sent in the room
-- on the website only, the display name you choose (the app does not ask for one)
+- quick-chat messages sent in the room (chosen from a fixed list; nobody can type free text)
+- your generated display name, which your opponent sees, and your random player ID, which they don't
 
 This is kept in the server's memory only. It is never written to a database, and it is gone when the room closes or the server restarts.
 
-Your device keeps the reconnect code and display name in temporary browser storage for the current session only.
+Your device keeps the reconnect code for the current session only.
 
 ## Service providers
 

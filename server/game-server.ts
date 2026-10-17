@@ -23,6 +23,7 @@ import type {
   ServerToClientEvents,
   SocketData
 } from "../src/multiplayer/protocol";
+import { isGeneratedName, isPlayerId } from "../src/multiplayer/names";
 import { isQuickChatMessage } from "../src/multiplayer/protocol";
 
 type ServerSideEvents = Record<string, never>;
@@ -36,6 +37,8 @@ type GameSocket = Socket<
 type RoomSeat = PublicRoomPlayer & {
   reconnectToken: string;
   socketId: string | null;
+  // Private; kept so ratings and profiles can be added later.
+  playerId: string | null;
 };
 
 type GameRoom = {
@@ -53,6 +56,7 @@ type GameRoom = {
 type QueueEntry = {
   socketId: string;
   name: string;
+  playerId: string | null;
   rules: GameRules;
 };
 
@@ -100,7 +104,7 @@ export function createGameServer(
       removeFromQueue(socket.id);
 
       const room = createRoom(rooms, payload.rules);
-      const connection = seatPlayer(room, socket, "red", payload.name, true);
+      const connection = seatPlayer(room, socket, "red", payload.name, payload.playerId, true);
       rooms.set(room.code, room);
       ackSuccess(ack, connection);
       broadcastRoom(room);
@@ -122,7 +126,7 @@ export function createGameServer(
 
       leaveCurrentRoom(socket, false);
       removeFromQueue(socket.id);
-      seatPlayer(room, socket, "black", payload.name, false);
+      seatPlayer(room, socket, "black", payload.name, payload.playerId, false);
       bumpRevision(room);
       const connection = connectionFor(room, "black");
       ackSuccess(ack, connection);
@@ -346,6 +350,7 @@ export function createGameServer(
         queue.push({
           socketId: socket.id,
           name: normalizeName(payload.name),
+          playerId: isPlayerId(payload.playerId) ? payload.playerId : null,
           rules: normalizeRules(payload.rules)
         });
         socket.data.queued = true;
@@ -362,6 +367,7 @@ export function createGameServer(
         queue.push({
           socketId: socket.id,
           name: normalizeName(payload.name),
+          playerId: isPlayerId(payload.playerId) ? payload.playerId : null,
           rules: normalizeRules(payload.rules)
         });
         socket.data.queued = true;
@@ -370,8 +376,8 @@ export function createGameServer(
       }
 
       const room = createRoom(rooms, payload.rules);
-      seatPlayer(room, opponentSocket, "red", opponent.name, true);
-      seatPlayer(room, socket, "black", payload.name, false);
+      seatPlayer(room, opponentSocket, "red", opponent.name, opponent.playerId, true);
+      seatPlayer(room, socket, "black", payload.name, payload.playerId, false);
       rooms.set(room.code, room);
       opponentSocket.data.queued = false;
       socket.data.queued = false;
@@ -590,6 +596,7 @@ function seatPlayer(
   socket: GameSocket,
   player: Player,
   name: string,
+  playerId: unknown,
   isHost: boolean
 ): RoomConnection {
   const reconnectToken = randomUUID();
@@ -599,7 +606,8 @@ function seatPlayer(
     connected: true,
     isHost,
     reconnectToken,
-    socketId: socket.id
+    socketId: socket.id,
+    playerId: isPlayerId(playerId) ? playerId : null
   };
 
   socket.data.session = {
@@ -673,9 +681,9 @@ function normalizeRules(rules: GameRules): GameRules {
   return { forceCheckerCaptures: Boolean(rules.forceCheckerCaptures) };
 }
 
-function normalizeName(name: string) {
-  const trimmed = name.trim().replace(/\s+/g, " ").slice(0, 24);
-  return trimmed || "Guest";
+// Only generated names are shown to other players; anything else becomes "Guest".
+function normalizeName(name: unknown) {
+  return typeof name === "string" && isGeneratedName(name) ? name : "Guest";
 }
 
 function normalizeCode(code: string) {

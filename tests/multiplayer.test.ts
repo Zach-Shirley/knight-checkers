@@ -53,15 +53,15 @@ describe("multiplayer game server", () => {
     const redClient = await newClient();
     const blackClient = await newClient();
     const redConnection = await createRoom(redClient, {
-      name: "Red Player",
+      name: "SwiftFalcon27",
       rules: { forceCheckerCaptures: true }
     });
     const redJoinedState = waitForState(
       redClient,
-      (state) => state.players.black?.name === "Black Player"
+      (state) => state.players.black?.name === "BraveOtter42"
     );
     const blackConnection = await joinRoom(blackClient, {
-      name: "Black Player",
+      name: "BraveOtter42",
       code: redConnection.snapshot.code
     });
 
@@ -185,6 +185,21 @@ describe("multiplayer game server", () => {
     const restarted = await restartedState;
     expect(restarted.game.moveLog).toHaveLength(0);
     expect(restarted.game.currentPlayer).toBe("red");
+  });
+
+  it("shows only generated names and keeps player IDs private", async () => {
+    const redClient = await newClient();
+    const blackClient = await newClient();
+    const room = await createRoom(redClient, {
+      name: "anything typed",
+      playerId: "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+      rules: { forceCheckerCaptures: true }
+    });
+    const joined = await joinRoom(blackClient, { name: "CalmHeron31", code: room.snapshot.code });
+
+    expect(joined.snapshot.players.red?.name).toBe("Guest");
+    expect(joined.snapshot.players.black?.name).toBe("CalmHeron31");
+    expect(JSON.stringify(joined.snapshot)).not.toContain("1b9d6bcd");
   });
 
   it("synchronizes quick-message chat and rejects free text", async () => {

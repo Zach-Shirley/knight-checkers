@@ -62,9 +62,10 @@ export type ServerResponse<T> =
 
 export type ServerAck<T> = (response: ServerResponse<T>) => void;
 
-export type CreateRoomPayload = { name: string; rules: GameRules };
-export type JoinRoomPayload = { code: string; name: string };
-export type MatchmakingPayload = { name: string; rules: GameRules };
+// `name` must be a generated display name; `playerId` is the device's permanent ID (for ratings later).
+export type CreateRoomPayload = { name: string; playerId?: string; rules: GameRules };
+export type JoinRoomPayload = { code: string; name: string; playerId?: string };
+export type MatchmakingPayload = { name: string; playerId?: string; rules: GameRules };
 export type QueueResult = { queued: boolean };
 
 export type ClientToServerEvents = {
