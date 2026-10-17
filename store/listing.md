@@ -31,7 +31,7 @@ No sign-in is needed. Online play connects to a game server that may take up to 
 
 ## Still to do
 
-- Screenshots: iPhone 6.9" (1320×2868), at least 3; Google phone screenshots, at least 2
+- Screenshots: drafts in `screenshots/framed/` (iPhone 6.9", 1320×2868, lacquered piece set). Regenerate after the art pick with `node scripts/store-screenshots.mjs <set>` then `node scripts/frame-screenshots.mjs`. The same images work for Google Play.
 - Google feature graphic (1024×500)
 - Final icon: pick from `art/icon-candidates.png` (the placeholder is the lacquered knight, an original render)
 - Final piece art: pick from `art/piece-sets.png`; ship only the chosen set and drop the CC BY-SA classic art from the app build

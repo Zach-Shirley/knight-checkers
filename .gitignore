@@ -7,3 +7,4 @@ CLAUDE_TASK.md
 .env*
 .claude/
 art/out/
+store/screenshots/raw/
