@@ -33,4 +33,5 @@ No sign-in is needed. Online play connects to a game server that may take up to 
 
 - Screenshots: iPhone 6.9" (1320×2868), at least 3; Google phone screenshots, at least 2
 - Google feature graphic (1024×500)
-- Final icon: the current icon reuses the CC BY-SA knight artwork (see README attribution)
+- Final icon: pick from `art/icon-candidates.png` (the placeholder is the lacquered knight, an original render)
+- Final piece art: pick from `art/piece-sets.png`; ship only the chosen set and drop the CC BY-SA classic art from the app build

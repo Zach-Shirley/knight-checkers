@@ -361,7 +361,8 @@ function lightScene(scene, env) {
   scene.add(new THREE.AmbientLight("#ffffff", 0.25));
 }
 
-function render(object, { yaw = 0, pitch = 0, frame, env = "neutral" }) {
+function render(object, { yaw = 0, pitch = 0, frame, env = "neutral", pixels = SIZE }) {
+  renderer.setSize(pixels, pixels);
   const scene = new THREE.Scene();
   lightScene(scene, env);
   const pivot = new THREE.Group();
@@ -397,6 +398,10 @@ for (const [key, style] of Object.entries(STYLES)) {
     if (style.outline) addOutline(knight, 1.6);
     await save(`${key}-knight-${side}`, render(knight, { yaw: -0.32, pitch: 0.1, frame: 1.08 }));
   }
+  // High-resolution red knight for the app icon.
+  const iconKnight = buildKnight(style, "red");
+  if (style.outline) addOutline(iconKnight, 1.6);
+  await save(`${key}-knight-icon`, render(iconKnight, { yaw: -0.32, pitch: 0.1, frame: 1.02, pixels: 1024 }));
   const crown = buildCrown(style);
   if (style.outline) addOutline(crown, 1.4);
   await save(`${key}-crown`, render(crown, { pitch: -0.18, frame: 1.1, env: style.silverCrown ? "neutral" : "warm" }));
