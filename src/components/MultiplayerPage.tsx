@@ -47,7 +47,9 @@ import type {
   RoomSnapshot,
   ServerResponse
 } from "../multiplayer/protocol";
+import { QUICK_CHAT_MESSAGES, withoutFreeText } from "../multiplayer/nativeSafety";
 import { getMultiplayerSocket } from "../multiplayer/socket";
+import { isNativeApp } from "../platform";
 import { Modal } from "./Modal";
 import { PieceToken, type PieceAnimation } from "./PieceToken";
 
@@ -69,14 +71,18 @@ export function MultiplayerPage({ onExit }: { onExit: () => void }) {
   const [busy, setBusy] = useState(false);
   const socket = useMemo(getMultiplayerSocket, []);
 
+  const showSnapshot = useCallback((next: RoomSnapshot) => {
+    setSnapshot(isNativeApp ? withoutFreeText(next) : next);
+  }, []);
+
   const acceptConnection = useCallback((connection: RoomConnection) => {
     writeSession(connection.session);
     setSession(connection.session);
-    setSnapshot(connection.snapshot);
+    showSnapshot(connection.snapshot);
     setQueued(false);
     setError(null);
     setConnecting(false);
-  }, []);
+  }, [showSnapshot]);
 
   useEffect(() => {
     function resumeSavedSession() {
@@ -110,7 +116,7 @@ export function MultiplayerPage({ onExit }: { onExit: () => void }) {
     function handleConnectError() {
       setConnected(false);
       setConnecting(false);
-      setError("The local game server is unavailable. Start the multiplayer dev command and try again.");
+      setError("Can't reach the game server yet. It sleeps when idle and can take up to a minute to wake up.");
     }
 
     function handleRoomClosed(message: string) {
@@ -124,7 +130,7 @@ export function MultiplayerPage({ onExit }: { onExit: () => void }) {
     socket.on("connect", resumeSavedSession);
     socket.on("disconnect", handleDisconnect);
     socket.on("connect_error", handleConnectError);
-    socket.on("room:state", setSnapshot);
+    socket.on("room:state", showSnapshot);
     socket.on("room:closed", handleRoomClosed);
     socket.on("matchmaking:matched", acceptConnection);
     socket.connect();
@@ -133,12 +139,12 @@ export function MultiplayerPage({ onExit }: { onExit: () => void }) {
       socket.off("connect", resumeSavedSession);
       socket.off("disconnect", handleDisconnect);
       socket.off("connect_error", handleConnectError);
-      socket.off("room:state", setSnapshot);
+      socket.off("room:state", showSnapshot);
       socket.off("room:closed", handleRoomClosed);
       socket.off("matchmaking:matched", acceptConnection);
       socket.disconnect();
     };
-  }, [acceptConnection, socket]);
+  }, [acceptConnection, showSnapshot, socket]);
 
   function runRoomRequest<T>(
     emit: (ack: (response: ServerResponse<T>) => void) => void,
@@ -357,17 +363,20 @@ function MultiplayerLobby({
         </div>
 
         <form className="lobby-form" onSubmit={submit}>
-          <label className="field-label">
-            Display name
-            <input
-              type="text"
-              value={name}
-              maxLength={24}
-              autoComplete="nickname"
-              placeholder="Guest"
-              onChange={(event) => setName(event.currentTarget.value)}
-            />
-          </label>
+          {/* The app build hides player-typed names, so it doesn't ask for one. */}
+          {isNativeApp ? null : (
+            <label className="field-label">
+              Display name
+              <input
+                type="text"
+                value={name}
+                maxLength={24}
+                autoComplete="nickname"
+                placeholder="Guest"
+                onChange={(event) => setName(event.currentTarget.value)}
+              />
+            </label>
+          )}
 
           {mode === "create" ? (
             <label className="setting-toggle compact-toggle">
@@ -462,7 +471,7 @@ function WaitingRoom({
         <div className="waiting-pulse" aria-hidden="true"><Users size={30} /></div>
         <p className="section-kicker">Private room</p>
         <h1 id="waiting-title">Waiting for an opponent</h1>
-        <p className="waiting-copy">Open Knight Checkers in another tab, choose Join room, and enter this code.</p>
+        <p className="waiting-copy">Share this code with your opponent. They choose Join room and enter it.</p>
 
         <button className="room-code-display" type="button" onClick={copyCode} title="Copy room code">
           <span>{snapshot.code}</span>
@@ -1025,21 +1034,36 @@ function ChatPanel({
           })
         )}
       </div>
-      <form className="chat-form" onSubmit={handleSubmit}>
-        <label className="sr-only" htmlFor="room-chat-message">Message opponent</label>
-        <input
-          id="room-chat-message"
-          type="text"
-          value={message}
-          maxLength={240}
-          placeholder="Message opponent"
-          disabled={!connected}
-          onChange={(event) => setMessage(event.currentTarget.value)}
-        />
-        <button type="submit" aria-label="Send message" title="Send message" disabled={!connected || !message.trim()}>
-          <Send aria-hidden="true" size={17} />
-        </button>
-      </form>
+      {isNativeApp ? (
+        <div className="quick-chat" aria-label="Quick messages">
+          {QUICK_CHAT_MESSAGES.map((quickMessage) => (
+            <button
+              key={quickMessage}
+              type="button"
+              disabled={!connected}
+              onClick={() => onSend(quickMessage, () => undefined)}
+            >
+              {quickMessage}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <form className="chat-form" onSubmit={handleSubmit}>
+          <label className="sr-only" htmlFor="room-chat-message">Message opponent</label>
+          <input
+            id="room-chat-message"
+            type="text"
+            value={message}
+            maxLength={240}
+            placeholder="Message opponent"
+            disabled={!connected}
+            onChange={(event) => setMessage(event.currentTarget.value)}
+          />
+          <button type="submit" aria-label="Send message" title="Send message" disabled={!connected || !message.trim()}>
+            <Send aria-hidden="true" size={17} />
+          </button>
+        </form>
+      )}
     </section>
   );
 }

@@ -1,0 +1,41 @@
+# Cloud iOS build: Codemagic builds on its Macs, signs the app and uploads it to TestFlight.
+# Not yet run. It needs an Apple Developer membership, the final bundle ID, an App Store Connect
+# API key added in Codemagic as the integration named below, and the app record's Apple ID.
+workflows:
+  ios-testflight:
+    name: iOS to TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: App Store Connect API key
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.example.knightcheckers
+      vars:
+        APP_STORE_APPLE_ID: 0000000000
+      node: 24
+      xcode: latest
+    triggering:
+      events: []
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Test
+        script: npm test
+      - name: Build web app and copy it into the iOS project
+        script: npm run mobile:sync
+      - name: Apply signing profiles
+        script: xcode-project use-profiles
+      - name: Bump build number past the latest TestFlight build
+        script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          cd ios/App && agvtool new-version -all $((LATEST + 1))
+      - name: Build signed .ipa
+        script: xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

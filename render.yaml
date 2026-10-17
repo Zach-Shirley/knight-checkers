@@ -11,4 +11,5 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: CLIENT_ORIGINS
-        value: https://knight-checkers.vercel.app
+        # capacitor://localhost and https://localhost are the iOS and Android app shells.
+        value: https://knight-checkers.vercel.app,capacitor://localhost,https://localhost

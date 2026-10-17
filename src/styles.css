@@ -1553,6 +1553,31 @@ h2 {
   cursor: not-allowed;
 }
 
+.quick-chat {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 10px;
+  border-top: 1px solid #dce2de;
+  gap: 6px;
+  background: #ffffff;
+}
+
+.quick-chat button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #cbd3cf;
+  border-radius: 999px;
+  color: #24302c;
+  background: #f8faf7;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.quick-chat button:disabled {
+  color: #929c97;
+  cursor: not-allowed;
+}
+
 .sr-only {
   position: absolute;
   overflow: hidden;
@@ -2094,5 +2119,47 @@ h2 {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Notched phones and the native app shell: keep controls clear of the status bar, notch and home indicator.
+   env() resolves to 0 on desktop browsers, so these match the values above there. */
+.home-menu {
+  padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+}
+
+.game-page {
+  padding: calc(24px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px))
+    calc(24px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
+}
+
+.multiplayer-page {
+  padding: calc(88px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-right, 0px))
+    calc(40px + env(safe-area-inset-bottom, 0px)) calc(24px + env(safe-area-inset-left, 0px));
+}
+
+.back-button {
+  top: calc(28px + env(safe-area-inset-top, 0px));
+  left: calc(28px + env(safe-area-inset-left, 0px));
+}
+
+@media (max-width: 680px) {
+  .home-menu {
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .game-page {
+    padding: calc(10px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px))
+      calc(20px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px));
+  }
+
+  .multiplayer-page {
+    padding: calc(78px + env(safe-area-inset-top, 0px)) calc(14px + env(safe-area-inset-right, 0px))
+      calc(24px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
+  }
+
+  .back-button {
+    top: calc(18px + env(safe-area-inset-top, 0px));
+    left: calc(18px + env(safe-area-inset-left, 0px));
   }
 }

@@ -45,11 +45,23 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 
 ## Deployment
 
-Pushes to `main` run the GitHub Actions validation workflow and deploy to `https://knight-checkers.vercel.app/` through Vercel.
+Pushes to `main` run the GitHub Actions validation workflow and deploy to `https://knight-checkers.vercel.app/` through Vercel. As of 2026-10-17 the deploy step fails because the stored Vercel token lacks project access; the live site was deployed manually.
 
 The multiplayer server is configured for Render through `render.yaml`. It uses a Free web service for the current side-project phase, deploys from every commit to `main`, listens on Render's assigned `PORT`, exposes `/health`, and accepts Socket.IO connections from the production Vercel origin. Set the Vercel production build variable `VITE_GAME_SERVER_URL` to the service's public `https://...onrender.com` URL after the Render service is created. The service can be upgraded to Starter later without changing the application architecture.
 
 One server process supports any number of simultaneous room codes within the service's memory limit. Rooms are held in memory, so a service restart ends active matches; persistent room recovery and horizontal scaling will require shared state such as Redis later.
+
+## Mobile apps (in progress)
+
+The `mobile-pilot` branch wraps the same web app for iPhone and Android with [Capacitor](https://capacitorjs.com). The reusable playbook is in `02 Projects/Foundry Mobile Kit`.
+
+- `npm run mobile:sync` builds the web app and copies it into `ios/` and `android/`.
+- `npm run mobile:icons` regenerates every icon and splash size from `scripts/make-app-icon.mjs`.
+- `codemagic.yaml` describes the cloud iOS build and TestFlight upload. It has not run yet.
+- `store/` holds draft privacy, support and listing copy.
+- The app build hides the unbuilt bot mode and shows no player-typed text: chat is limited to preset phrases and opponents appear by seat color (`src/multiplayer/nativeSafety.ts`).
+- The app connects to the production game server, which must allow the `capacitor://localhost` and `https://localhost` origins (`render.yaml`).
+- `appId` in `capacitor.config.ts` is a placeholder until the LLC domain is chosen.
 
 ## Implemented rules
 

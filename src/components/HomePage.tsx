@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BookOpen, Bot, Gamepad2, Users } from "lucide-react";
+import { isNativeApp } from "../platform";
 import {
   BOARD_SIZE,
   type GameRules,
@@ -72,13 +73,16 @@ export function HomePage({ onStartLocal, onOpenMultiplayer }: HomePageProps) {
               <small>Rooms and matchmaking</small>
             </span>
           </button>
-          <button className="menu-button quiet" type="button" onClick={() => setDialog("bots")}>
-            <Bot aria-hidden="true" size={23} />
-            <span>
-              <strong>Play a Bot</strong>
-              <small>Practice on your own</small>
-            </span>
-          </button>
+          {/* App review rejects placeholder features, so the unbuilt bot mode stays web-only. */}
+          {isNativeApp ? null : (
+            <button className="menu-button quiet" type="button" onClick={() => setDialog("bots")}>
+              <Bot aria-hidden="true" size={23} />
+              <span>
+                <strong>Play a Bot</strong>
+                <small>Practice on your own</small>
+              </span>
+            </button>
+          )}
         </div>
 
         <button className="rules-link" type="button" onClick={() => setDialog("rules")}>

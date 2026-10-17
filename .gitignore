@@ -5,3 +5,4 @@ dev-local*.log
 .vercel/
 CLAUDE_TASK.md
 .env*
+.claude/

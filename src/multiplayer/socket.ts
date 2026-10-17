@@ -1,4 +1,5 @@
 import { io, type Socket } from "socket.io-client";
+import { isNativeApp, PRODUCTION_GAME_SERVER_URL } from "../platform";
 import type { ClientToServerEvents, ServerToClientEvents } from "./protocol";
 
 export type MultiplayerSocket = Socket<
@@ -7,7 +8,8 @@ export type MultiplayerSocket = Socket<
 >;
 
 const gameServerUrl =
-  import.meta.env.VITE_GAME_SERVER_URL ?? "http://127.0.0.1:4175";
+  import.meta.env.VITE_GAME_SERVER_URL ??
+  (isNativeApp ? PRODUCTION_GAME_SERVER_URL : "http://127.0.0.1:4175");
 
 let socket: MultiplayerSocket | null = null;
 

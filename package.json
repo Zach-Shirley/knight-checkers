@@ -11,9 +11,15 @@
     "server:start": "tsx server/game-server.ts",
     "preview:local": "vite preview --host 127.0.0.1 --port 4174 --strictPort",
     "build": "tsc && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mobile:icons": "node scripts/make-app-icon.mjs && capacitor-assets generate --ios --android --iconBackgroundColor #2f6b57 --splashBackgroundColor #111613 --splashBackgroundColorDark #111613",
+    "mobile:sync": "npm run build && cap sync"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/status-bar": "^8.0.4",
     "lucide-react": "^1.21.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -22,6 +28,8 @@
     "tsx": "^4.23.12"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.3",
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
