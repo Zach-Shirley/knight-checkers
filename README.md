@@ -50,7 +50,9 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 
 ## Deployment
 
-Pushes to `main` run the GitHub Actions validation workflow and deploy to `https://knight-checkers.vercel.app/` through Vercel. As of 2026-10-17 the deploy step fails because the stored Vercel token lacks project access; the live site was deployed manually.
+The web app deploys through Vercel's GitHub integration on Zach's main Vercel account (`zach-shirleys-projects/knight-checkers`, set up 2026-10-17): every pushed branch gets a preview URL and `main` deploys to `https://knight-checkers-nu.vercel.app`. GitHub Actions only runs tests and the build.
+
+The older `https://knight-checkers.vercel.app/` lives on a separate Vercel account and is no longer updated automatically. Build settings are pinned in `vercel.json`.
 
 The multiplayer server is configured for Render through `render.yaml`. It uses a Free web service for the current side-project phase, deploys from every commit to `main`, listens on Render's assigned `PORT`, exposes `/health`, and accepts Socket.IO connections from the production Vercel origin. Set the Vercel production build variable `VITE_GAME_SERVER_URL` to the service's public `https://...onrender.com` URL after the Render service is created. The service can be upgraded to Starter later without changing the application architecture.
 

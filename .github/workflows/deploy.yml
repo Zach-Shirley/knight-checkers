@@ -1,4 +1,5 @@
-name: Validate and Deploy
+# Deploys come from Vercel's GitHub integration (every branch gets a preview; main is production).
+name: Validate
 
 on:
   push:
@@ -31,43 +32,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-  deploy:
-    name: Deploy to Vercel
-    needs: validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@54.17.0
-
-      - name: Pull Vercel settings
-        run: vercel pull --yes --environment=production --scope zach-3589s-projects
-
-      - name: Build Vercel output
-        run: vercel build --prod --scope zach-3589s-projects
-
-      - name: Deploy Vercel output
-        run: |
-          vercel deploy --prebuilt --prod --scope zach-3589s-projects \
-            -m githubCommitSha="${GITHUB_SHA}" \
-            -m githubCommitRef="${GITHUB_REF_NAME}" \
-            -m githubCommitRepo="${GITHUB_REPOSITORY#*/}" \
-            -m githubCommitOrg="${GITHUB_REPOSITORY_OWNER}" \
-            -m githubCommitAuthorName="Zach Shirley" \
-            -m githubCommitAuthorEmail="244805547+Zach-Shirley@users.noreply.github.com"
