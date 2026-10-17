@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "../src/game";
-import { QUICK_CHAT_MESSAGES, withoutFreeText } from "../src/multiplayer/nativeSafety";
-import type { RoomSnapshot } from "../src/multiplayer/protocol";
+import { withoutFreeText } from "../src/multiplayer/nativeSafety";
+import { QUICK_CHAT_MESSAGES, type RoomSnapshot } from "../src/multiplayer/protocol";
 
 function snapshotWith(chatTexts: string[]): RoomSnapshot {
   return {

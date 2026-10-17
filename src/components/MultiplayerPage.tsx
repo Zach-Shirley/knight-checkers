@@ -18,7 +18,6 @@ import {
   MessageSquare,
   Radio,
   RotateCcw,
-  Send,
   Swords,
   Trophy,
   UserRound,
@@ -40,14 +39,15 @@ import {
   type Player,
   type Square
 } from "../game";
-import type {
-  PlayerSession,
-  QueueResult,
-  RoomConnection,
-  RoomSnapshot,
-  ServerResponse
+import {
+  QUICK_CHAT_MESSAGES,
+  type PlayerSession,
+  type QueueResult,
+  type RoomConnection,
+  type RoomSnapshot,
+  type ServerResponse
 } from "../multiplayer/protocol";
-import { QUICK_CHAT_MESSAGES, withoutFreeText } from "../multiplayer/nativeSafety";
+import { withoutFreeText } from "../multiplayer/nativeSafety";
 import { getMultiplayerSocket } from "../multiplayer/socket";
 import { isNativeApp } from "../platform";
 import { Modal } from "./Modal";
@@ -998,19 +998,12 @@ function ChatPanel({
   connected: boolean;
   onSend: (message: string, onSent: () => void) => void;
 }) {
-  const [message, setMessage] = useState("");
   const messageListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const messageList = messageListRef.current;
     if (messageList) messageList.scrollTop = messageList.scrollHeight;
   }, [snapshot.chat.length]);
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!message.trim() || !connected) return;
-    onSend(message, () => setMessage(""));
-  }
 
   return (
     <section className="chat-section" aria-labelledby="chat-title">
@@ -1034,36 +1027,18 @@ function ChatPanel({
           })
         )}
       </div>
-      {isNativeApp ? (
-        <div className="quick-chat" aria-label="Quick messages">
-          {QUICK_CHAT_MESSAGES.map((quickMessage) => (
-            <button
-              key={quickMessage}
-              type="button"
-              disabled={!connected}
-              onClick={() => onSend(quickMessage, () => undefined)}
-            >
-              {quickMessage}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <form className="chat-form" onSubmit={handleSubmit}>
-          <label className="sr-only" htmlFor="room-chat-message">Message opponent</label>
-          <input
-            id="room-chat-message"
-            type="text"
-            value={message}
-            maxLength={240}
-            placeholder="Message opponent"
+      <div className="quick-chat" aria-label="Quick messages">
+        {QUICK_CHAT_MESSAGES.map((quickMessage) => (
+          <button
+            key={quickMessage}
+            type="button"
             disabled={!connected}
-            onChange={(event) => setMessage(event.currentTarget.value)}
-          />
-          <button type="submit" aria-label="Send message" title="Send message" disabled={!connected || !message.trim()}>
-            <Send aria-hidden="true" size={17} />
+            onClick={() => onSend(quickMessage, () => undefined)}
+          >
+            {quickMessage}
           </button>
-        </form>
-      )}
+        ))}
+      </div>
     </section>
   );
 }

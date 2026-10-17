@@ -1,12 +1,11 @@
 // Captures App Store screenshots (iPhone 6.9", 1320x2868) from the real app in app-shell mode.
 // Needs: the Vite dev server on :4174 started with VITE_GAME_SERVER_URL=http://127.0.0.1:4175,
 // and a local game server (PORT=4175 npx tsx server/game-server.ts).
-// Usage: node scripts/store-screenshots.mjs [pieceSet]   → store/screenshots/raw/*.png
+// Usage: node scripts/store-screenshots.mjs   → store/screenshots/raw/*.png
 import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
 const APP = "http://localhost:4174";
-const pieceSet = process.argv[2] ?? "lacquer";
 const outDir = "store/screenshots/raw";
 mkdirSync(outDir, { recursive: true });
 
@@ -28,7 +27,7 @@ async function appPage() {
     window.androidBridge = { postMessage() {} };
   });
   const page = await context.newPage();
-  await page.goto(`${APP}/?pieces=${pieceSet}`);
+  await page.goto(`${APP}/`);
   return page;
 }
 
@@ -85,8 +84,7 @@ for (const [page, from, to] of [[host, "c3", "d4"], [guest, "b6", "a5"], [host, 
   await square(page, to).click();
   await page.waitForTimeout(600);
 }
-await guest.locator("#room-chat-message").fill("Good luck!");
-await guest.locator("form.chat-form button[type=submit]").click();
+await guest.getByRole("button", { name: "Good luck!" }).click();
 await host.getByRole("button", { name: "Thanks!" }).click();
 await host.waitForTimeout(400);
 await square(host, "d4").click();

@@ -23,6 +23,7 @@ import type {
   ServerToClientEvents,
   SocketData
 } from "../src/multiplayer/protocol";
+import { isQuickChatMessage } from "../src/multiplayer/protocol";
 
 type ServerSideEvents = Record<string, never>;
 type GameSocket = Socket<
@@ -272,8 +273,8 @@ export function createGameServer(
       const { room } = membership;
 
       const text = normalizeChatMessage(message);
-      if (!text) {
-        ackFailure(ack, "Enter a message first.");
+      if (!isQuickChatMessage(text)) {
+        ackFailure(ack, "Choose one of the quick messages.");
         return;
       }
 

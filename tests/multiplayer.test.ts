@@ -187,7 +187,7 @@ describe("multiplayer game server", () => {
     expect(restarted.game.currentPlayer).toBe("red");
   });
 
-  it("normalizes and synchronizes room chat", async () => {
+  it("synchronizes quick-message chat and rejects free text", async () => {
     const redClient = await newClient();
     const blackClient = await newClient();
     const room = await createRoom(redClient, {
@@ -198,17 +198,21 @@ describe("multiplayer game server", () => {
 
     const redChatState = waitForState(redClient, (state) => state.chat.length === 1);
     const blackChatState = waitForState(blackClient, (state) => state.chat.length === 1);
-    expect(await sendChat(redClient, "  good   luck  ")).toEqual({ ok: true, data: null });
+    expect(await sendChat(redClient, "  Good   luck!  ")).toEqual({ ok: true, data: null });
 
     const [redState, blackState] = await Promise.all([redChatState, blackChatState]);
     expect(redState.chat).toEqual(blackState.chat);
     expect(redState.chat[0]).toMatchObject({
       player: "red",
-      text: "good luck"
+      text: "Good luck!"
+    });
+    expect(await sendChat(blackClient, "anything a stranger might type")).toEqual({
+      ok: false,
+      message: "Choose one of the quick messages."
     });
     expect(await sendChat(blackClient, "   ")).toEqual({
       ok: false,
-      message: "Enter a message first."
+      message: "Choose one of the quick messages."
     });
   });
 

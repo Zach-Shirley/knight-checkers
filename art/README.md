@@ -6,7 +6,7 @@ Original knight and crown sprites for Knight Checkers, rendered from 3D models r
 - `studio.html` / `studio.js`: three.js scene that extrudes the outlines into 3D pieces, lights them like a product photo and renders 512px PNGs for five styles (lacquer, wood, toon, faceted, metal). Each knight comes in red, black and gray (resting).
 - `save-server.mjs`: tiny local endpoint the studio posts its PNGs to (`art/out/`).
 - `export.mjs`: trims and resizes the renders into `src/assets/pieces/<style>/`.
-- `contact-sheet.mjs`, `board-preview.html`, `compare.mjs`: review tools. `piece-sets.png` is the latest side-by-side comparison on the real board.
+- `contact-sheet.mjs`, `board-preview.html`: review tools. `piece-sets.png` and `icon-candidates.png` record the five styles Zach chose from on 2026-10-17.
 
 ## Re-rendering
 
@@ -15,8 +15,8 @@ node art/save-server.mjs
 npm run dev:local
 ```
 
-Open `http://127.0.0.1:4174/art/studio.html` (add `?style=wood` for one style, `&save=0` to preview without saving), then run `node art/export.mjs` and `node art/compare.mjs`.
+Open `http://127.0.0.1:4174/art/studio.html` (add `?style=lacquer` for one style, `&save=0` to preview without saving), then run `node art/export.mjs`.
 
-## Using a set in the app
+## Shipped set
 
-`src/pieceArt.ts` picks the set. Add `?pieces=<style>` to any app URL to preview one; the choice sticks on that device. `classic` is the original Wikimedia-based art (CC BY-SA 3.0) and is still the default until a set is chosen.
+Lacquered resin knights with a plain gold crown (no jewels), chosen by Zach on 2026-10-17. `node art/export.mjs [style]` copies a style into `src/assets/pieces/`. The other styles stay in the studio for later use.

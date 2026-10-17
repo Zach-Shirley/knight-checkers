@@ -1,6 +1,12 @@
 import type { CSSProperties } from "react";
 import type { Piece } from "../game";
-import { pieceArt } from "../pieceArt";
+import crownPng from "../assets/pieces/crown.png";
+import knightBlackPng from "../assets/pieces/knight-black.png";
+import knightGrayPng from "../assets/pieces/knight-gray.png";
+import knightRedPng from "../assets/pieces/knight-red.png";
+
+// Original sprites rendered by art/studio.js (lacquered resin knights, plain gold crown).
+const KNIGHT_SPRITES = { red: knightRedPng, black: knightBlackPng, gray: knightGrayPng };
 
 export type PieceAnimation = {
   id: number;
@@ -36,11 +42,11 @@ export function PieceToken({
   };
 
   if (piece.kind === "knight") {
-    const source = pieceArt.knight[resting ? "gray" : piece.player];
+    const source = KNIGHT_SPRITES[resting ? "gray" : piece.player];
 
     return (
       <span
-        className={`knight-piece ${piece.player} ${resting ? "resting" : "ready"} ${pieceArt.rendered ? "rendered" : ""} ${animationClass}`.replace(/\s+/g, " ").trim()}
+        className={`knight-piece ${piece.player} ${resting ? "resting" : "ready"} ${animationClass}`.trim()}
         style={animation?.style}
         aria-hidden="true"
         onAnimationEnd={handleAnimationEnd}
@@ -58,7 +64,7 @@ export function PieceToken({
       onAnimationEnd={handleAnimationEnd}
     >
       {piece.kind === "king" ? (
-        <img className={`king-mark ${pieceArt.rendered ? "rendered" : ""}`.trim()} src={pieceArt.crown} alt="" draggable="false" />
+        <img className="king-mark" src={crownPng} alt="" draggable="false" />
       ) : null}
     </span>
   );

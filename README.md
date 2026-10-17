@@ -31,7 +31,7 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 
 - `/` provides the game-mode menu, rules, and local-game setup.
 - `/local` runs the complete pass-and-play game with move history and standard game actions.
-- `/multiplayer` provides private room creation, join codes, quick matching, reconnect support, room chat, resignations, a 30-second disconnect grace period, visible departure states, and rematches.
+- `/multiplayer` provides private room creation, join codes, quick matching, reconnect support, quick-message room chat, resignations, a 30-second disconnect grace period, visible departure states, and rematches.
 
 ## Multiplayer architecture
 
@@ -41,6 +41,7 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 - Per-tab reconnect tokens allow a player to refresh without taking over the other tab's seat.
 - Disconnects pause the match for 30 seconds. Reconnecting cancels the deadline; otherwise the server records a resignation.
 - Room snapshots include capped chat history and rematch votes so every connected player sees the same conversation and match state.
+- Chat is limited to a fixed set of quick messages (`QUICK_CHAT_MESSAGES` in `src/multiplayer/protocol.ts`); the server rejects anything else. That avoids moderating free text and the App Store's user-generated-content rules.
 - Rooms are currently ephemeral and disappear when the game server restarts. Persistent accounts, ratings, and multi-instance scaling are intentionally deferred until shared storage is added.
 
 ## Deployment
@@ -59,7 +60,7 @@ The `mobile-pilot` branch wraps the same web app for iPhone and Android with [Ca
 - `npm run mobile:icons` regenerates every icon and splash size from `scripts/make-app-icon.mjs`.
 - `codemagic.yaml` describes the cloud iOS build and TestFlight upload. It has not run yet.
 - `store/` holds draft privacy, support and listing copy.
-- The app build hides the unbuilt bot mode and shows no player-typed text: chat is limited to preset phrases and opponents appear by seat color (`src/multiplayer/nativeSafety.ts`).
+- The app build hides the unbuilt bot mode and shows no player-typed text: opponents appear by seat color instead of their typed name (`src/multiplayer/nativeSafety.ts`).
 - The app connects to the production game server, which must allow the `capacitor://localhost` and `https://localhost` origins (`render.yaml`).
 - `appId` in `capacitor.config.ts` is a placeholder until the LLC domain is chosen.
 
@@ -80,7 +81,6 @@ The `mobile-pilot` branch wraps the same web app for iPhone and Android with [Ca
 
 The game rules live in `src/game.ts`, separate from the React UI, so a later online version can reuse the same state transitions behind a network layer.
 
-## Asset attribution
+## Piece art
 
-- Knight SVGs are based on `Chess ndt45.svg` and `Chess nlt45.svg` from Wikimedia Commons' standard transparent chess pieces, authored by Cburnett and licensed CC BY-SA 3.0. The red knight is a local color derivative of the light SVG.
-- The white king marker uses the geometry from Cburnett's [`Chess klt45.svg`](https://commons.wikimedia.org/wiki/File:Chess_klt45.svg), licensed CC BY-SA 3.0, with a scalable `viewBox` added for this app.
+The knight and crown sprites are original renders made for this project with three.js (`art/`). Earlier versions used Wikimedia Commons pieces by Cburnett (CC BY-SA 3.0); those files were removed on 2026-10-17 and no longer ship.

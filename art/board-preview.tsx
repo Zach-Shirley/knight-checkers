@@ -1,5 +1,5 @@
 // A fixed mid-game position for judging piece art in the real board styles.
-// Open /art/board-preview.html?pieces=<style>.
+// Open /art/board-preview.html.
 import ReactDOM from "react-dom/client";
 import { PieceToken } from "../src/components/PieceToken";
 import type { Piece, PieceKind, Player } from "../src/game";

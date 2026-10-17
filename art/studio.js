@@ -133,6 +133,7 @@ const SIDE_COLORS = {
 const STYLES = {
   lacquer: {
     label: "Lacquered resin",
+    gems: false, // Zach's pick: plain gold crown, no jewels on the band
     body: (side) =>
       new THREE.MeshPhysicalMaterial({
         color: SIDE_COLORS[side],
@@ -309,7 +310,7 @@ function buildCrown(style) {
     group.add(mesh);
   }
   const gem = style.gem();
-  for (const g of CROWN_GEMS) {
+  for (const g of style.gems === false ? [] : CROWN_GEMS) {
     const mesh = new THREE.Mesh(
       finishGeometry(new THREE.SphereGeometry(g.r, style.faceted ? 6 : 32, style.faceted ? 4 : 20), style),
       gem

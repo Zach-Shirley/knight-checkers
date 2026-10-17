@@ -1,5 +1,22 @@
 import type { GameRules, GameState, Player } from "../game";
 
+// Room chat is limited to these phrases on every platform, so no player ever sees free-form
+// text from a stranger (and the app needs no report/block/filter tools for App Store review).
+export const QUICK_CHAT_MESSAGES = [
+  "Good luck!",
+  "Good game!",
+  "Nice move!",
+  "Oops.",
+  "Thinking...",
+  "Rematch?",
+  "Thanks!",
+  "Well played."
+] as const;
+
+export function isQuickChatMessage(text: string) {
+  return (QUICK_CHAT_MESSAGES as readonly string[]).includes(text);
+}
+
 export type RoomStage = "waiting" | "playing" | "finished";
 
 export type PublicRoomPlayer = {

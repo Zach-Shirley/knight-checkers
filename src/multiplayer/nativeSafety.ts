@@ -1,23 +1,9 @@
 import type { Player } from "../game";
-import type { RoomSnapshot } from "./protocol";
+import { isQuickChatMessage, type RoomSnapshot } from "./protocol";
 
 // The app-store build shows no free-form text from other players (App Store guideline 1.2,
-// user-generated content). Native players chat with these phrases only, and anything else a
-// web player types is hidden from them, including display names.
-export const QUICK_CHAT_MESSAGES = [
-  "Good luck!",
-  "Good game!",
-  "Nice move!",
-  "Oops.",
-  "Thinking...",
-  "Rematch?",
-  "Thanks!",
-  "Well played."
-] as const;
-
-export function isQuickChatMessage(text: string) {
-  return (QUICK_CHAT_MESSAGES as readonly string[]).includes(text);
-}
+// user-generated content). Chat is quick-messages-only everywhere, but this also hides display
+// names and guards against servers that still accept free text.
 
 const SEAT_NAMES: Record<Player, string> = { red: "Red player", black: "Black player" };
 

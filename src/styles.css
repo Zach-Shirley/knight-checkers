@@ -959,19 +959,19 @@ h2 {
   position: relative;
   z-index: 3;
   display: block;
-  width: 64%;
+  width: 70%;
   height: auto;
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.18)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.46));
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
 }
 
 .knight-piece {
   position: relative;
   z-index: 2;
   display: grid;
-  width: 82%;
+  width: 90%;
   aspect-ratio: 1;
   place-items: center;
   will-change: transform;
@@ -985,34 +985,8 @@ h2 {
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
-}
-
-.knight-piece.red.ready .knight-mark {
-  filter: drop-shadow(0 0 1px rgba(92, 18, 18, 0.95)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.48));
-}
-
-.knight-piece.black.ready .knight-mark {
-  filter: drop-shadow(0 0 1px rgba(216, 226, 240, 0.85)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.58));
-}
-
-.knight-piece.resting .knight-mark {
-  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.28)) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.42));
-}
-
-/* Rendered sprites carry their own lighting; give them only a soft contact shadow. */
-.knight-piece.rendered {
-  width: 90%;
-}
-
-.knight-piece.rendered .knight-mark,
-.knight-piece.rendered.ready .knight-mark,
-.knight-piece.rendered.resting .knight-mark {
+  /* The sprites carry their own lighting, so they only need a soft contact shadow. */
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
-}
-
-.king-mark.rendered {
-  width: 70%;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
 }
 
 .move-target {
@@ -1521,52 +1495,6 @@ h2 {
   border-color: #bad0c7;
   color: #173f34;
   background: #e0ede7;
-}
-
-.chat-form {
-  display: grid;
-  padding: 10px;
-  border-top: 1px solid #dce2de;
-  grid-template-columns: minmax(0, 1fr) 38px;
-  gap: 7px;
-  background: #ffffff;
-}
-
-.chat-form input {
-  min-width: 0;
-  height: 38px;
-  padding: 0 10px;
-  border: 1px solid #cbd3cf;
-  border-radius: 6px;
-  color: #24302c;
-  background: #f8faf7;
-  font: inherit;
-  font-size: 0.78rem;
-}
-
-.chat-form input:focus {
-  border-color: #2b6657;
-  outline: 2px solid rgba(43, 102, 87, 0.17);
-}
-
-.chat-form button {
-  display: grid;
-  width: 38px;
-  aspect-ratio: 1;
-  padding: 0;
-  border: 1px solid #235949;
-  border-radius: 6px;
-  place-items: center;
-  color: #ffffff;
-  background: #286554;
-  cursor: pointer;
-}
-
-.chat-form button:disabled {
-  border-color: #c5ccc8;
-  color: #929c97;
-  background: #e5e9e6;
-  cursor: not-allowed;
 }
 
 .quick-chat {
