@@ -68,6 +68,11 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
     state.rules.forceCheckerCaptures &&
     legalMoves.some((move) => move.pieceKind !== "knight" && move.captures.length > 0);
   const humanPlayer = bot ? opponentOf(bot.player) : null;
+  // The human's pieces sit at the bottom; pass-and-play keeps Red at the bottom.
+  const perspective: Player = humanPlayer ?? "red";
+  const boardRows = perspective === "black" ? [...rows].reverse() : rows;
+  const boardCols = perspective === "black" ? [...cols].reverse() : cols;
+  const topPlayer = opponentOf(perspective);
   const isBotTurn = Boolean(bot && state.status.phase === "playing" && state.currentPlayer === bot.player);
 
   useEffect(() => {
@@ -105,7 +110,7 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
 
   function playMove(move: Move) {
     const nextState = applyMove(state, move.id);
-    setPieceAnimation(createPieceAnimation(move, state.turnNumber));
+    setPieceAnimation(createPieceAnimation(move, state.turnNumber, perspective));
     setHistory((currentHistory) => [...currentHistory, nextState]);
     setSelectedPieceId(nextState.forcedPieceId);
   }
@@ -189,15 +194,15 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
         <div className="board-column">
           <PlayerBar
             name={botName ?? "Player 2"}
-            player="black"
-            active={state.status.phase === "playing" && state.currentPlayer === "black"}
+            player={topPlayer}
+            active={state.status.phase === "playing" && state.currentPlayer === topPlayer}
             isBot={Boolean(bot)}
           />
 
           <div className="board-frame">
             <div className="board" role="grid" aria-label="Knight Checkers board">
-              {rows.flatMap((row) =>
-                cols.map((col) => {
+              {boardRows.flatMap((row, visualRow) =>
+                boardCols.map((col, visualCol) => {
                   const square = { row, col };
                   const piece = getPieceAt(state, square);
                   const squareMove = selectedMoves.find(
@@ -240,10 +245,10 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
                         />
                       ) : null}
                       {squareMove ? <span className="move-target" aria-hidden="true" /> : null}
-                      {col === BOARD_SIZE - 1 ? (
+                      {visualCol === BOARD_SIZE - 1 ? (
                         <span className="rank-label" aria-hidden="true">{BOARD_SIZE - row}</span>
                       ) : null}
-                      {row === BOARD_SIZE - 1 ? (
+                      {visualRow === BOARD_SIZE - 1 ? (
                         <span className="file-label" aria-hidden="true">{String.fromCharCode(97 + col)}</span>
                       ) : null}
                     </button>
@@ -255,8 +260,8 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
 
           <PlayerBar
             name={bot ? getPlayerIdentity().name : "Player 1"}
-            player="red"
-            active={state.status.phase === "playing" && state.currentPlayer === "red"}
+            player={perspective}
+            active={state.status.phase === "playing" && state.currentPlayer === perspective}
             isYou
           />
         </div>
@@ -444,9 +449,11 @@ function RuleDialog({
   );
 }
 
-function createPieceAnimation(move: Move, turnNumber: number): PieceAnimation {
-  const fromX = (move.from.col - move.to.col) * CELL_DISTANCE_IN_TOKEN_PERCENT;
-  const fromY = (move.from.row - move.to.row) * CELL_DISTANCE_IN_TOKEN_PERCENT;
+function createPieceAnimation(move: Move, turnNumber: number, perspective: Player): PieceAnimation {
+  // A flipped board mirrors both axes, so screen-space offsets flip sign too.
+  const orientation = perspective === "black" ? -1 : 1;
+  const fromX = (move.from.col - move.to.col) * CELL_DISTANCE_IN_TOKEN_PERCENT * orientation;
+  const fromY = (move.from.row - move.to.row) * CELL_DISTANCE_IN_TOKEN_PERCENT * orientation;
   const isHop = move.pieceKind === "knight" || move.captures.length > 0;
 
   return {

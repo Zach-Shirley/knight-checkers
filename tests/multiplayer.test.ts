@@ -279,8 +279,28 @@ describe("multiplayer game server", () => {
 
     const [first, second] = await Promise.all([firstMatched, secondMatched]);
     expect(first.snapshot.code).toBe(second.snapshot.code);
-    expect(first.session.player).toBe("red");
-    expect(second.session.player).toBe("black");
+    // Colors are random, but the two players always get opposite ones.
+    expect([first.session.player, second.session.player].sort()).toEqual(["black", "red"]);
+  });
+
+  it("lets the room creator choose Black and seats the joiner as Red", async () => {
+    const hostClient = await newClient();
+    const guestClient = await newClient();
+    const room = await createRoom(hostClient, {
+      name: "CalmHeron31",
+      rules: { forceCheckerCaptures: true },
+      color: "black"
+    });
+    expect(room.session.player).toBe("black");
+
+    const joined = await joinRoom(guestClient, { name: "BoldOtter12", code: room.snapshot.code });
+    expect(joined.session.player).toBe("red");
+    expect(joined.snapshot.stage).toBe("playing");
+    // Red always moves first.
+    expect(joined.snapshot.game.currentPlayer).toBe("red");
+    expect(await joinRoom(await newClient(), { name: "WiseLynx44", code: room.snapshot.code }).catch((error: Error) => error.message)).toBe(
+      "That room is already full."
+    );
   });
 });
 

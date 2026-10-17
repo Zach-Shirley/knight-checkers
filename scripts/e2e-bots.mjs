@@ -107,5 +107,41 @@ await c.getByRole("button", { name: "Play a bot instead" }).click();
 await c.waitForURL(/\/bot$/);
 check((await c.locator(".game-panel-header strong").innerText()) === "Medium bot", "play a bot instead leaves the queue and opens a bot game");
 
+// 4. Color choice: playing the bot as Black flips the board and the bot (Red) opens.
+const d = await (await browser.newContext(device)).newPage();
+watch(d, "D");
+await d.goto(APP);
+await d.getByText("Play a Bot").click();
+await d.getByRole("radio", { name: "Black" }).click();
+await d.getByRole("button", { name: "Start game" }).click();
+await d.waitForFunction(() => Number(document.querySelector(".moves-heading span")?.textContent) >= 1, null, { timeout: 8000 });
+const firstLabel = await d.locator(".board button").first().getAttribute("aria-label");
+check(firstLabel.startsWith("h1,"), `board is flipped for Black (top-left square is ${firstLabel.split(",")[0]})`);
+check((await d.locator(".player-bar").last().innerText()).includes("You"), "your bar is at the bottom");
+check((await d.locator(".move-list li").first().innerText()).includes("Red"), "the bot, playing Red, moves first");
+await d.screenshot({ path: `${out}/e2e-bot-black.png` });
+
+// 5. Private room: the creator picks Black, the joiner gets Red and moves first.
+const host = await (await browser.newContext(device)).newPage();
+watch(host, "host");
+await host.goto(`${APP}/multiplayer`);
+await host.waitForSelector("text=Playing as");
+await host.getByRole("radio", { name: "Black" }).click();
+await host.getByRole("button", { name: "Create private room" }).click();
+await host.waitForSelector("text=Waiting for an opponent");
+const code = (await host.locator(".room-code-display span").innerText()).trim();
+const guest = await (await browser.newContext(device)).newPage();
+watch(guest, "guest");
+await guest.goto(`${APP}/multiplayer`);
+await guest.waitForSelector("text=Playing as");
+await guest.getByText("Join room", { exact: true }).first().click();
+await guest.getByPlaceholder("ABC123").fill(code);
+await guest.locator("form.lobby-form button[type=submit]").click();
+await guest.waitForSelector("text=Your move");
+check(true, "joiner of a Black-hosted room plays Red and moves first");
+await host.waitForSelector("text=Online match");
+check((await host.locator(".player-bar").last().innerText()).includes("Black"), "host sees themselves as Black at the bottom");
+await host.screenshot({ path: `${out}/e2e-room-black.png` });
+
 check(errors.length === 0, `no console errors${errors.length ? ": " + errors.join(" | ") : ""}`);
 await browser.close();

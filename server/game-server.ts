@@ -104,7 +104,7 @@ export function createGameServer(
       removeFromQueue(socket.id);
 
       const room = createRoom(rooms, payload.rules);
-      const connection = seatPlayer(room, socket, "red", payload.name, payload.playerId, true);
+      const connection = seatPlayer(room, socket, resolveColor(payload.color), payload.name, payload.playerId, true);
       rooms.set(room.code, room);
       ackSuccess(ack, connection);
       broadcastRoom(room);
@@ -119,16 +119,18 @@ export function createGameServer(
         return;
       }
 
-      if (room.players.black) {
+      // The joiner takes whichever color the host left open.
+      const openSeat: Player | null = !room.players.red ? "red" : !room.players.black ? "black" : null;
+      if (!openSeat) {
         ackFailure(ack, "That room is already full.");
         return;
       }
 
       leaveCurrentRoom(socket, false);
       removeFromQueue(socket.id);
-      seatPlayer(room, socket, "black", payload.name, payload.playerId, false);
+      seatPlayer(room, socket, openSeat, payload.name, payload.playerId, false);
       bumpRevision(room);
-      const connection = connectionFor(room, "black");
+      const connection = connectionFor(room, openSeat);
       ackSuccess(ack, connection);
       broadcastRoom(room);
     });
@@ -312,12 +314,12 @@ export function createGameServer(
       }
 
       const { room, player } = membership;
-      if (player !== "red" || !room.players.red?.isHost) {
+      if (!room.players[player]?.isHost) {
         ackFailure(ack, "Only the room host can change the rules.");
         return;
       }
 
-      if (room.players.black) {
+      if (room.players.red && room.players.black) {
         ackFailure(ack, "Rules cannot change after another player joins.");
         return;
       }
@@ -375,20 +377,20 @@ export function createGameServer(
         return;
       }
 
+      // Quick match assigns colors at random; Red still moves first.
       const room = createRoom(rooms, payload.rules);
-      seatPlayer(room, opponentSocket, "red", opponent.name, opponent.playerId, true);
-      seatPlayer(room, socket, "black", payload.name, payload.playerId, false);
+      const waitingColor: Player = Math.random() < 0.5 ? "red" : "black";
+      const joiningColor: Player = waitingColor === "red" ? "black" : "red";
+      seatPlayer(room, opponentSocket, waitingColor, opponent.name, opponent.playerId, true);
+      seatPlayer(room, socket, joiningColor, payload.name, payload.playerId, false);
       rooms.set(room.code, room);
       opponentSocket.data.queued = false;
       socket.data.queued = false;
       bumpRevision(room);
 
       ackSuccess(ack, { queued: false });
-      opponentSocket.emit(
-        "matchmaking:matched",
-        connectionFor(room, "red")
-      );
-      socket.emit("matchmaking:matched", connectionFor(room, "black"));
+      opponentSocket.emit("matchmaking:matched", connectionFor(room, waitingColor));
+      socket.emit("matchmaking:matched", connectionFor(room, joiningColor));
       broadcastRoom(room);
     });
 
@@ -455,7 +457,8 @@ export function createGameServer(
     socket.leave(room.code);
     socket.data.session = undefined;
 
-    if (!room.players.black) {
+    // Leaving a room nobody else has joined closes it.
+    if (!room.players.red || !room.players.black) {
       deleteRoom(room);
       socket.emit("room:closed", "The room was closed.");
       return;
@@ -679,6 +682,12 @@ function bumpRevision(room: GameRoom) {
 
 function normalizeRules(rules: GameRules): GameRules {
   return { forceCheckerCaptures: Boolean(rules.forceCheckerCaptures) };
+}
+
+// Older clients send no color and expect to host as Red.
+function resolveColor(choice: unknown): Player {
+  if (choice === "random") return Math.random() < 0.5 ? "red" : "black";
+  return choice === "black" ? "black" : "red";
 }
 
 // Only generated names are shown to other players; anything else becomes "Guest".

@@ -3,7 +3,9 @@ import { HomePage } from "./components/HomePage";
 import { LocalGamePage } from "./components/LocalGamePage";
 import { MultiplayerPage } from "./components/MultiplayerPage";
 import type { BotLevel } from "./bot";
-import type { GameRules } from "./game";
+import { resolveColorChoice } from "./components/ColorPicker";
+import { opponentOf, type GameRules, type Player } from "./game";
+import type { ColorChoice } from "./multiplayer/protocol";
 
 type AppRoute = "/" | "/local" | "/bot" | "/multiplayer";
 
@@ -22,6 +24,7 @@ export function App() {
   const [localRules, setLocalRules] = useState<GameRules>({ forceCheckerCaptures: true });
   const [localSession, setLocalSession] = useState(0);
   const [botLevel, setBotLevel] = useState<BotLevel>("medium");
+  const [botPlayer, setBotPlayer] = useState<Player>("black");
 
   useEffect(() => {
     const handlePopState = () => setRoute(getRoute());
@@ -43,8 +46,9 @@ export function App() {
     navigate("/local");
   }
 
-  function startBotGame(level: BotLevel, rules: GameRules) {
+  function startBotGame(level: BotLevel, rules: GameRules, color: ColorChoice) {
     setBotLevel(level);
+    setBotPlayer(opponentOf(resolveColorChoice(color)));
     setLocalRules(rules);
     setLocalSession((current) => current + 1);
     navigate("/bot");
@@ -65,7 +69,7 @@ export function App() {
       <LocalGamePage
         key={`bot-${localSession}`}
         initialRules={localRules}
-        bot={{ player: "black", level: botLevel }}
+        bot={{ player: botPlayer, level: botLevel }}
         onExit={() => navigate("/")}
       />
     );

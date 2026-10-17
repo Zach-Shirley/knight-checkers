@@ -42,6 +42,7 @@ Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, the
 - Per-tab reconnect tokens allow a player to refresh without taking over the other tab's seat.
 - Players never type a name. Each device gets a permanent generated name (like `SwiftFalcon27`) and a random player ID (`src/playerIdentity.ts`), kept for ratings and profiles later. The server shows only generated names and never sends player IDs to other players.
 - During quick match a player can play a bot while waiting (a found match takes over immediately) or play a bot instead.
+- Colors: Red always moves first. Against the bot and when creating a private room the player picks Red, Black or Random (the board flips for Black). The room joiner gets the other color, and quick match assigns colors at random. Pass & play keeps Red at the bottom.
 - Disconnects pause the match for 30 seconds. Reconnecting cancels the deadline; otherwise the server records a resignation.
 - Room snapshots include capped chat history and rematch votes so every connected player sees the same conversation and match state.
 - Chat is limited to a fixed set of quick messages (`QUICK_CHAT_MESSAGES` in `src/multiplayer/protocol.ts`); the server rejects anything else. That avoids moderating free text and the App Store's user-generated-content rules.

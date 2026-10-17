@@ -29,6 +29,7 @@ import {
   getLegalMoves,
   getPieceAt,
   isDarkSquare,
+  opponentOf,
   pieceName,
   playerName,
   squareName,
@@ -41,6 +42,7 @@ import {
 } from "../game";
 import {
   QUICK_CHAT_MESSAGES,
+  type ColorChoice,
   type PlayerSession,
   type QueueResult,
   type RoomConnection,
@@ -51,6 +53,7 @@ import { withoutFreeText } from "../multiplayer/nativeSafety";
 import { getMultiplayerSocket } from "../multiplayer/socket";
 import { type BotLevel } from "../bot";
 import { getPlayerIdentity } from "../playerIdentity";
+import { ColorPicker, resolveColorChoice } from "./ColorPicker";
 import { BotLevelPicker } from "./HomePage";
 import { LocalGamePage } from "./LocalGamePage";
 import { Modal } from "./Modal";
@@ -68,11 +71,11 @@ export function MultiplayerPage({
   onPlayBot
 }: {
   onExit: () => void;
-  onPlayBot: (level: BotLevel, rules: GameRules) => void;
+  onPlayBot: (level: BotLevel, rules: GameRules, color: ColorChoice) => void;
 }) {
   const identity = useMemo(getPlayerIdentity, []);
   // While quick match searches, the player can play a bot; a found match replaces that game.
-  const [waitingBot, setWaitingBot] = useState<{ level: BotLevel; rules: GameRules; session: number } | null>(null);
+  const [waitingBot, setWaitingBot] = useState<{ level: BotLevel; rules: GameRules; botPlayer: Player; session: number } | null>(null);
   const [queueRules, setQueueRules] = useState<GameRules>({ forceCheckerCaptures: true });
   const [matchNotice, setMatchNotice] = useState(false);
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
@@ -184,9 +187,9 @@ export function MultiplayerPage({
     });
   }
 
-  function createRoom(rules: GameRules) {
+  function createRoom(rules: GameRules, color: ColorChoice) {
     runRoomRequest<RoomConnection>(
-      (ack) => socket.emit("room:create", { name: identity.name, playerId: identity.id, rules }, ack),
+      (ack) => socket.emit("room:create", { name: identity.name, playerId: identity.id, rules, color }, ack),
       acceptConnection
     );
   }
@@ -282,7 +285,7 @@ export function MultiplayerPage({
       <LocalGamePage
         key={`waiting-bot-${waitingBot.session}`}
         initialRules={waitingBot.rules}
-        bot={{ player: "black", level: waitingBot.level }}
+        bot={{ player: waitingBot.botPlayer, level: waitingBot.level }}
         kicker="Still searching for a match"
         onExit={() => setWaitingBot(null)}
       />
@@ -301,8 +304,10 @@ export function MultiplayerPage({
       onJoin={joinRoom}
       onQueue={joinQueue}
       onCancelQueue={() => cancelQueue()}
-      onBotWhileWaiting={(level) => setWaitingBot({ level, rules: queueRules, session: Date.now() })}
-      onBotInstead={(level) => cancelQueue(() => onPlayBot(level, queueRules))}
+      onBotWhileWaiting={(level, color) =>
+        setWaitingBot({ level, rules: queueRules, botPlayer: opponentOf(resolveColorChoice(color)), session: Date.now() })
+      }
+      onBotInstead={(level, color) => cancelQueue(() => onPlayBot(level, queueRules, color))}
     />
   );
 }
@@ -339,22 +344,24 @@ function MultiplayerLobby({
   queued: boolean;
   error: string | null;
   onExit: () => void;
-  onCreate: (rules: GameRules) => void;
+  onCreate: (rules: GameRules, color: ColorChoice) => void;
   onJoin: (code: string) => void;
   onQueue: (rules: GameRules) => void;
   onCancelQueue: () => void;
-  onBotWhileWaiting: (level: BotLevel) => void;
-  onBotInstead: (level: BotLevel) => void;
+  onBotWhileWaiting: (level: BotLevel, color: ColorChoice) => void;
+  onBotInstead: (level: BotLevel, color: ColorChoice) => void;
 }) {
   const [mode, setMode] = useState<LobbyMode>("create");
   const [code, setCode] = useState("");
   const [forcedCaptures, setForcedCaptures] = useState(true);
   const [botLevel, setBotLevel] = useState<BotLevel>("medium");
+  const [roomColor, setRoomColor] = useState<ColorChoice>("random");
+  const [botColor, setBotColor] = useState<ColorChoice>("red");
 
   function submit(event: FormEvent) {
     event.preventDefault();
     if (mode === "create") {
-      onCreate({ forceCheckerCaptures: forcedCaptures });
+      onCreate({ forceCheckerCaptures: forcedCaptures }, roomColor);
     } else {
       onJoin(code);
     }
@@ -371,11 +378,12 @@ function MultiplayerLobby({
           <div className="queue-bot">
             <strong>Play a bot meanwhile?</strong>
             <BotLevelPicker value={botLevel} onChange={setBotLevel} />
+            <ColorPicker value={botColor} onChange={setBotColor} dark />
             <div className="queue-bot-actions">
-              <button className="button primary" type="button" onClick={() => onBotWhileWaiting(botLevel)}>
+              <button className="button primary" type="button" onClick={() => onBotWhileWaiting(botLevel, botColor)}>
                 Play while I wait
               </button>
-              <button className="button secondary" type="button" onClick={() => onBotInstead(botLevel)} disabled={busy}>
+              <button className="button secondary" type="button" onClick={() => onBotInstead(botLevel, botColor)} disabled={busy}>
                 Play a bot instead
               </button>
             </div>
@@ -435,6 +443,8 @@ function MultiplayerLobby({
             Playing as <strong>{ownName}</strong>
           </p>
 
+          {mode === "create" ? <ColorPicker value={roomColor} onChange={setRoomColor} dark /> : null}
+
           {mode === "create" ? (
             <label className="setting-toggle compact-toggle">
               <span>
@@ -475,7 +485,7 @@ function MultiplayerLobby({
         <div className="quick-match-row">
           <div>
             <strong>Quick match</strong>
-            <span>Pair with another waiting player.</span>
+            <span>Pair with another waiting player. Colors are random.</span>
           </div>
           <button
             className="button secondary"
@@ -512,7 +522,12 @@ function WaitingRoom({
   const isHost = snapshot.players[session.player]?.isHost ?? false;
 
   async function copyCode() {
-    await navigator.clipboard.writeText(snapshot.code);
+    // The clipboard API only exists on secure (https) pages.
+    try {
+      await navigator.clipboard.writeText(snapshot.code);
+    } catch {
+      return;
+    }
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1_500);
   }
@@ -536,7 +551,7 @@ function WaitingRoom({
         </button>
 
         <div className="waiting-seats">
-          <WaitingSeat label="Red" name={snapshot.players.red?.name ?? "Open"} connected={Boolean(snapshot.players.red?.connected)} />
+          <WaitingSeat label="Red" name={snapshot.players.red?.name ?? "Open seat"} connected={Boolean(snapshot.players.red?.connected)} />
           <span aria-hidden="true">vs</span>
           <WaitingSeat label="Black" name={snapshot.players.black?.name ?? "Open seat"} connected={Boolean(snapshot.players.black?.connected)} />
         </div>

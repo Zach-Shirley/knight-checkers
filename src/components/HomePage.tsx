@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { BookOpen, Bot, Gamepad2, Users } from "lucide-react";
 import { BOT_LEVELS, type BotLevel } from "../bot";
+import type { ColorChoice } from "../multiplayer/protocol";
+import { ColorPicker } from "./ColorPicker";
 import {
   BOARD_SIZE,
   type GameRules,
@@ -19,7 +21,7 @@ const previewState = createPreviewState();
 
 type HomePageProps = {
   onStartLocal: (rules: GameRules) => void;
-  onStartBot: (level: BotLevel, rules: GameRules) => void;
+  onStartBot: (level: BotLevel, rules: GameRules, color: ColorChoice) => void;
   onOpenMultiplayer: () => void;
 };
 
@@ -29,6 +31,7 @@ export function HomePage({ onStartLocal, onStartBot, onOpenMultiplayer }: HomePa
   const [dialog, setDialog] = useState<HomeDialog>(null);
   const [forceCheckerCaptures, setForceCheckerCaptures] = useState(true);
   const [botLevel, setBotLevel] = useState<BotLevel>("medium");
+  const [botColor, setBotColor] = useState<ColorChoice>("red");
 
   function beginLocalGame() {
     onStartLocal({ forceCheckerCaptures });
@@ -136,8 +139,9 @@ export function HomePage({ onStartLocal, onStartBot, onOpenMultiplayer }: HomePa
       ) : null}
 
       {dialog === "bots" ? (
-        <Modal title="Play a bot" description="You play Red and move first." onClose={() => setDialog(null)}>
+        <Modal title="Play a bot" description="Pick a difficulty and a side." onClose={() => setDialog(null)}>
           <BotLevelPicker value={botLevel} onChange={setBotLevel} />
+          <ColorPicker value={botColor} onChange={setBotColor} />
           <label className="setting-toggle">
             <span>
               <strong>Force checker captures</strong>
@@ -158,7 +162,7 @@ export function HomePage({ onStartLocal, onStartBot, onOpenMultiplayer }: HomePa
               className="button primary"
               type="button"
               data-autofocus
-              onClick={() => onStartBot(botLevel, { forceCheckerCaptures })}
+              onClick={() => onStartBot(botLevel, { forceCheckerCaptures }, botColor)}
             >
               Start game
             </button>
