@@ -7,6 +7,7 @@ import {
   createInitialState,
   endOptionalJump,
   getLegalMoves,
+  getMaterial,
   getPieceCounts,
   resignGame
 } from "../src/game";
@@ -347,3 +348,23 @@ function stateFromPieces(
     }
   };
 }
+
+describe("material", () => {
+  it("scores knights 3, kings 2 and checkers 1, and lists captures by the capturing side", () => {
+    const start = createInitialState();
+    expect(getMaterial(start).score).toEqual({ red: 15, black: 15 });
+
+    // Play until the first capture and check it is credited to the side that made it.
+    let state = start;
+    for (let ply = 0; ply < 200 && state.moveLog.every((entry) => entry.captured.length === 0); ply++) {
+      const moves = getLegalMoves(state);
+      const capture = moves.find((move) => move.captures.length > 0);
+      state = applyMove(state, (capture ?? moves[ply % moves.length]).id);
+    }
+    const captureEntry = state.moveLog.find((entry) => entry.captured.length > 0)!;
+    const { captured, score } = getMaterial(state);
+    expect(captured[captureEntry.player]).toEqual(captureEntry.captured);
+    const victim = captureEntry.player === "red" ? "black" : "red";
+    expect(score[victim]).toBeLessThan(15);
+  });
+});

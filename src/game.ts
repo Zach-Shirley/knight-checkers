@@ -676,3 +676,25 @@ function isInside(square: Square): boolean {
 function isPromotionRow(player: Player, row: number): boolean {
   return player === "red" ? row === 0 : row === BOARD_SIZE - 1;
 }
+
+// Material points: knight 3, king 2, checker 1.
+export const PIECE_POINTS: Record<PieceKind, number> = { man: 1, king: 2, knight: 3 };
+
+export type Material = {
+  // Points still on the board for each side.
+  score: Record<Player, number>;
+  // Enemy pieces each side has captured, as they were when taken (a crowned king counts as a king).
+  captured: Record<Player, PieceKind[]>;
+};
+
+export function getMaterial(state: GameState): Material {
+  const score: Record<Player, number> = { red: 0, black: 0 };
+  for (const row of state.board) {
+    for (const piece of row) {
+      if (piece) score[piece.player] += PIECE_POINTS[piece.kind];
+    }
+  }
+  const captured: Record<Player, PieceKind[]> = { red: [], black: [] };
+  for (const entry of state.moveLog) captured[entry.player].push(...entry.captured);
+  return { score, captured };
+}

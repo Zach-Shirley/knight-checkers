@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Bot,
   BookOpen,
@@ -31,6 +31,8 @@ import {
 import { BOT_LEVELS, type BotLevel } from "../bot";
 import { requestBotAction } from "../botClient";
 import { getPlayerIdentity } from "../playerIdentity";
+import { GameOverDialog } from "./GameOverDialog";
+import { MaterialStrip } from "./MaterialStrip";
 import { Modal } from "./Modal";
 import { PieceToken, type PieceAnimation } from "./PieceToken";
 
@@ -155,6 +157,13 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
     setPieceAnimation(null);
   }
 
+  // Same rules and opponent, fresh board.
+  function playAgain() {
+    setHistory([createInitialState(state.rules)]);
+    setSelectedPieceId(null);
+    setPieceAnimation(null);
+  }
+
   function startNewGame() {
     setHistory([createInitialState({ forceCheckerCaptures: ruleDraft })]);
     setSelectedPieceId(null);
@@ -197,6 +206,7 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
             player={topPlayer}
             active={state.status.phase === "playing" && state.currentPlayer === topPlayer}
             isBot={Boolean(bot)}
+            material={<MaterialStrip state={state} player={topPlayer} />}
           />
 
           <div className="board-frame">
@@ -263,6 +273,7 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
             player={perspective}
             active={state.status.phase === "playing" && state.currentPlayer === perspective}
             isYou
+            material={<MaterialStrip state={state} player={perspective} />}
           />
         </div>
 
@@ -359,6 +370,18 @@ export function LocalGamePage({ initialRules, onExit, bot, kicker }: LocalGamePa
         />
       ) : null}
 
+      {dialog === null ? (
+        <GameOverDialog
+          state={state}
+          you={humanPlayer}
+          actions={[
+            { label: "Play again", onClick: playAgain },
+            { label: "Change rules", onClick: () => openDialog("new-game") },
+            { label: "Main menu", onClick: onExit }
+          ]}
+        />
+      ) : null}
+
       {dialog === "rules" ? (
         <Modal title="How to play" onClose={() => setDialog(null)}>
           <p className="rules-copy">
@@ -380,13 +403,15 @@ function PlayerBar({
   player,
   active,
   isYou = false,
-  isBot = false
+  isBot = false,
+  material
 }: {
   name: string;
   player: Player;
   active: boolean;
   isYou?: boolean;
   isBot?: boolean;
+  material?: ReactNode;
 }) {
   return (
     <div className={`player-bar ${player} ${active ? "active" : ""}`}>
@@ -394,6 +419,7 @@ function PlayerBar({
       <div className="player-identity">
         <strong>{name}</strong>
         {isYou ? <span>You</span> : null}
+        {material}
       </div>
       <div className="player-turn-state">
         <span className="turn-pip" aria-hidden="true" />

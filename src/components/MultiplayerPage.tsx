@@ -56,6 +56,7 @@ import { getPlayerIdentity } from "../playerIdentity";
 import { ColorPicker, resolveColorChoice } from "./ColorPicker";
 import { BotLevelPicker } from "./HomePage";
 import { LocalGamePage } from "./LocalGamePage";
+import { MaterialStrip } from "./MaterialStrip";
 import { Modal } from "./Modal";
 import { PieceToken, type PieceAnimation } from "./PieceToken";
 
@@ -744,6 +745,7 @@ function OnlineGame({
             player={topPlayer}
             roomPlayer={snapshot.players[topPlayer]}
             active={state.status.phase === "playing" && state.currentPlayer === topPlayer}
+            state={state}
           />
 
           <div className="board-frame">
@@ -796,6 +798,7 @@ function OnlineGame({
             roomPlayer={snapshot.players[bottomPlayer]}
             active={state.status.phase === "playing" && state.currentPlayer === bottomPlayer}
             isYou
+            state={state}
           />
 
           <GameEventOverlay
@@ -922,6 +925,12 @@ function GameEventOverlay({
   const ownRematchVote = snapshot.rematchVotes.includes(session.player);
   const opponentRematchVote = snapshot.rematchVotes.includes(opponent);
   const disconnectSeconds = useCountdownSeconds(snapshot.disconnectDeadlines[opponent]);
+  // "View board" hides the result card; a rematch (a new game) brings it back next time.
+  const [resultHidden, setResultHidden] = useState(false);
+  const isOver = state.status.phase === "won";
+  useEffect(() => {
+    if (!isOver) setResultHidden(false);
+  }, [isOver]);
 
   if (connected && opponentConnected && state.status.phase === "playing") {
     return null;
@@ -945,7 +954,7 @@ function GameEventOverlay({
     );
   }
 
-  if (state.status.phase !== "won") {
+  if (state.status.phase !== "won" || resultHidden) {
     return null;
   }
 
@@ -990,6 +999,7 @@ function GameEventOverlay({
             {!opponentConnected ? "Opponent left" : ownRematchVote ? "Waiting for opponent" : opponentRematchVote ? "Accept rematch" : "Request rematch"}
           </button>
           <button className="button secondary" type="button" onClick={onLeave}>Leave room</button>
+          <button className="button secondary" type="button" onClick={() => setResultHidden(true)}>View board</button>
         </div>
       </section>
     </div>
@@ -1013,12 +1023,14 @@ function OnlinePlayerBar({
   player,
   roomPlayer,
   active,
-  isYou = false
+  isYou = false,
+  state
 }: {
   player: Player;
   roomPlayer: RoomSnapshot["players"][Player];
   active: boolean;
   isYou?: boolean;
+  state: GameState;
 }) {
   return (
     <div className={`player-bar ${player} ${active ? "active" : ""} ${roomPlayer?.connected ? "" : "disconnected"}`}>
@@ -1026,6 +1038,7 @@ function OnlinePlayerBar({
       <div className="player-identity">
         <strong>{roomPlayer?.name ?? "Open seat"}</strong>
         <span>{isYou ? `You · ${playerName(player)} · Unrated` : `${playerName(player)} · Unrated`}</span>
+        <MaterialStrip state={state} player={player} />
       </div>
       <div className="player-turn-state">
         <span className="turn-pip" aria-hidden="true" />
