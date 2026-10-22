@@ -1,92 +1,117 @@
 # Knight Checkers
 
-A browser-based variant of American checkers with one chess knight per side. It includes local pass-and-play and an authoritative real-time multiplayer mode for private rooms or quick matching.
+American checkers with one bad idea: each side also gets a chess knight. Play a friend on one screen, play the bot, or play strangers online.
+
+**Status: playable.** The web game is live and complete. An iPhone/Android version is in progress and not in any app store yet.
+
+**Play it:** https://knight-checkers-nu.vercel.app
+
+The first online connection can take up to a minute: the multiplayer server runs on Render's free tier and sleeps when nobody is playing. Pass & Play and the bot work instantly and offline.
+
+![Store screenshots: home, pass and play, bot game, private room, online match](store/screenshots/overview.png)
+
+## How to play
+
+It's normal American checkers on an 8×8 board, plus one knight per side (Red's starts on e2, Black's on d7).
+
+- Checkers move diagonally, jump to capture, chain multi-jumps and crown into kings on the far row.
+- The **knight** moves and captures like a chess knight and is never forced to capture.
+- After the knight moves, it **rests for one turn** (it turns gray): your next move must be with a checker.
+- Checkers can jump and capture the knight like any other piece.
+- You win by taking all of the opponent's checkers (their knight can survive), or when the opponent has no legal move.
+- **Red always moves first.**
+- An optional "force checker captures" setting makes captures mandatory for checkers (never for the knight).
+
+## Modes
+
+- **Pass & Play:** two players on one device.
+- **Play a Bot:** Easy, Medium or Hard; you choose Red, Black or Random. As Black the board flips and the bot opens. The bot runs on your device, so it works offline.
+- **Online:**
+  - **Private rooms:** share a six-character code. The creator picks a color and the joiner gets the other.
+  - **Quick match:** pairs you with the next player who searches, with colors assigned at random. While you wait you can play a bot; a found match takes over immediately.
+  - Games survive a refresh or a brief disconnect (30-second grace period), and include resign and rematch.
+  - Chat is a fixed set of quick messages ("Good luck!", "Rematch?"…).
+  - Every player gets a generated name like `SwiftFalcon27`. Nobody can type text that another player sees.
+
+## How it works
+
+- **Rules engine:** `src/game.ts` is pure TypeScript with no UI. The web client, the bot and the server all use it, so they agree on every rule.
+- **Bot:** `src/bot.ts` runs an alpha-beta search with iterative deepening and capture quiescence, inside a web worker. Difficulty levels change the search depth, the time budget and how often the bot deliberately picks a worse move.
+- **Server:** `server/game-server.ts` runs Node and Socket.IO and is authoritative. Clients send move IDs; the server validates them with the rules engine and broadcasts a snapshot. Rooms live in memory, so one process handles many rooms, and a restart ends active games.
+- **Identity:** each device stores a random player ID and a generated name (`src/playerIdentity.ts`). The server shows only generated names, never forwards player IDs, and accepts only the quick-chat phrases. The IDs exist so ratings and profiles can be added later.
+- **Frontend:** React 19, Vite and TypeScript, deployed on Vercel. Every pushed branch gets a preview build, and `main` goes to production.
+- **Mobile:** [Capacitor](https://capacitorjs.com) wraps the same web build in `ios/` and `android/` projects. `codemagic.yaml` describes a cloud iOS build to TestFlight (not run yet), and `store/` holds draft privacy, support and listing copy.
 
 ## Run locally
 
 ```bash
 npm install
-npm run dev
+npm run dev:multiplayer   # web app on http://127.0.0.1:4174 and game server on :4175
+npm test                  # unit and server tests
+npm run build             # type-check and production build
 ```
 
-Then open the localhost URL printed by Vite.
+`npm run dev:local` runs only the web app (Pass & Play and the bot don't need the server). The server's health check is `GET /health`.
 
-For local pass-and-play only:
+## Verification
 
-```bash
-npm run dev:local
-```
+**Automated (`npm test`, 34 tests, all passing):**
+- `tests/game.test.ts` covers rules: movement, forced and optional captures, double and triple jumps, king jumps that change direction, crowning, the knight's moves and cooldown, and both win conditions.
+- `tests/multiplayer.test.ts` runs a real Socket.IO server with real clients. It covers rooms, joins, rejected out-of-turn moves, resume after a refresh, disconnect grace, resignation, rematch, quick match, color choice, quick-chat-only chat, and keeping player IDs private.
+- `tests/bot.test.ts` covers legal moves at every level, taking free pieces, not walking into a capture, finishing multi-jumps, Medium beating Easy, and Hard staying within its time budget.
+- `tests/names.test.ts` and `tests/nativeSafety.test.ts` cover generated names, ID validation and the client-side free-text filter.
+- GitHub Actions runs the tests and the build on every push to `main`.
 
-Then open `http://knight-checkers.127.0.0.1.sslip.io:4174/` or `http://127.0.0.1:4174/`.
+**Scripted browser checks:**
+- `scripts/e2e-bots.mjs` (Playwright) has 17 checks: bot games, undo, playing a bot during quick match and the match taking over, the flipped board for Black, and a Black-hosted room.
+- `scripts/store-screenshots.mjs` drives the real app to produce the store screenshots.
 
-For multiplayer development, start the web app and game server together:
+**Checked by hand (2026-10-17):**
+- On the deployed site at a phone-sized viewport: a bot game as Black, and a two-browser online room with quick chat against the production server.
+- Earlier (2026-08-14): two simultaneous online rooms with four clients.
 
-```bash
-npm run dev:multiplayer
-```
+**Not tested yet:**
+- A real iPhone or Android device.
+- Compiled native app builds; neither the iOS nor the Android project has been built.
+- Bot difficulty against real people.
+- Load beyond a handful of simultaneous games.
 
-Open `http://127.0.0.1:4174/` in two tabs. Create a private room in one tab, then join its six-character code from the other. The authoritative Socket.IO game server listens on `http://127.0.0.1:4175/`; its health check is available at `/health`.
+## Known limitations
 
-## App screens
+- The free Render server sleeps, so the first online connection can take up to a minute, and a server restart ends games in progress.
+- No accounts, ratings or leaderboards yet.
+- Rematches keep the same colors.
+- The native apps aren't built or published. Their bundle ID is a placeholder.
+- Branch preview deployments require a Vercel login. Only the production URL above is public.
 
-- `/` provides the game-mode menu, rules, and local-game setup.
-- `/local` runs the complete pass-and-play game with move history and standard game actions.
-- `/bot` plays against the computer at Easy, Medium or Hard. The bot (`src/bot.ts`) is an alpha-beta search over the shared rules engine and runs in a web worker, so it works offline.
-- `/multiplayer` provides private room creation, join codes, quick matching, reconnect support, quick-message room chat, resignations, a 30-second disconnect grace period, visible departure states, and rematches.
+## Story
 
-## Multiplayer architecture
+Knight Checkers was the first project in Zach Shirley's Foundry portfolio of small games and tools: ordinary checkers with a chess knight dropped in, plus a rule that the knight has to sit out a turn after it moves.
 
-- `server/game-server.ts` owns room membership and the canonical game state in memory.
-- Clients submit move IDs; the server validates them through the shared rules engine before broadcasting a new snapshot.
-- Accepted moves animate locally from their source square after server validation, keeping both board perspectives visually consistent without making the client authoritative.
-- Per-tab reconnect tokens allow a player to refresh without taking over the other tab's seat.
-- Players never type a name. Each device gets a permanent generated name (like `SwiftFalcon27`) and a random player ID (`src/playerIdentity.ts`), kept for ratings and profiles later. The server shows only generated names and never sends player IDs to other players.
-- During quick match a player can play a bot while waiting (a found match takes over immediately) or play a bot instead.
-- Colors: Red always moves first. Against the bot and when creating a private room the player picks Red, Black or Random (the board flips for Black). The room joiner gets the other color, and quick match assigns colors at random. Pass & play keeps Red at the bottom.
-- Disconnects pause the match for 30 seconds. Reconnecting cancels the deadline; otherwise the server records a resignation.
-- Room snapshots include capped chat history and rematch votes so every connected player sees the same conversation and match state.
-- Chat is limited to a fixed set of quick messages (`QUICK_CHAT_MESSAGES` in `src/multiplayer/protocol.ts`); the server rejects anything else. That avoids moderating free text and the App Store's user-generated-content rules.
-- Rooms are currently ephemeral and disappear when the game server restarts. Persistent accounts, ratings, and multi-instance scaling are intentionally deferred until shared storage is added.
+It was built in August 2026 in an OpenAI Codex session: the rules engine, the React UI, the authoritative multiplayer server, and deployment to Vercel and Render. In October 2026 the project moved to Claude Code as the pilot for taking Foundry games to the App Store and Google Play. That pass added:
+- the Capacitor shell and the app-store safety rules (no free text, generated names)
+- original 3D-rendered piece art
+- the bot and color choice
+- store screenshots and copy
+- auto-deploy from GitHub to Vercel
 
-## Deployment
+## AI assistance and Zach's role
 
-The web app deploys through Vercel's GitHub integration on Zach's main Vercel account (`zach-shirleys-projects/knight-checkers`, set up 2026-10-17): every pushed branch gets a preview URL and `main` deploys to `https://knight-checkers-nu.vercel.app`. GitHub Actions only runs tests and the build.
+Nearly all of the code, tests and art pipeline were written by AI coding agents: OpenAI Codex in August 2026, and Anthropic's Claude (Claude Code) from October 2026.
 
-The older `https://knight-checkers.vercel.app/` lives on a separate Vercel account and is no longer updated automatically. Build settings are pinned in `vercel.json`.
+Zach directed the project:
+- came up with the variant and set its rules (knight cooldown, optional forced captures, win conditions)
+- chose what to build next: multiplayer, bots, quick chat instead of free text, generated identities, color choice, and the mobile direction
+- picked the final art (lacquered knights, a plain gold crown) from five rendered options
+- reviewed the results and asked for corrections
 
-The multiplayer server is configured for Render through `render.yaml`. It uses a Free web service for the current side-project phase, deploys from every commit to `main`, listens on Render's assigned `PORT`, exposes `/health`, and accepts Socket.IO connections from the production Vercel origin. Set the Vercel production build variable `VITE_GAME_SERVER_URL` to the service's public `https://...onrender.com` URL after the Render service is created. The service can be upgraded to Starter later without changing the application architecture.
+The agents designed the implementation, wrote and ran the tests, and verified the deployed build. Manual playtesting on a real phone is still to come (see Verification).
 
-One server process supports any number of simultaneous room codes within the service's memory limit. Rooms are held in memory, so a service restart ends active matches; persistent room recovery and horizontal scaling will require shared state such as Redis later.
+## Attribution
 
-## Mobile apps (in progress)
+- **Current art:** the knight and crown sprites are original renders made for this project with three.js. The source and pipeline are in `art/`.
+- **Earlier art:** earlier versions (still in this repo's git history) used Cburnett's chess pieces from Wikimedia Commons ([`Chess ndt45.svg`](https://commons.wikimedia.org/wiki/File:Chess_ndt45.svg), [`Chess nlt45.svg`](https://commons.wikimedia.org/wiki/File:Chess_nlt45.svg) and [`Chess klt45.svg`](https://commons.wikimedia.org/wiki/File:Chess_klt45.svg)), licensed [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). The red knight and the scalable king marker were local derivatives. That share-alike licence covers those images only, not this project's code.
 
-The `mobile-pilot` branch wraps the same web app for iPhone and Android with [Capacitor](https://capacitorjs.com). The reusable playbook is in `02 Projects/Foundry Mobile Kit`.
+## License
 
-- `npm run mobile:sync` builds the web app and copies it into `ios/` and `android/`.
-- `npm run mobile:icons` regenerates every icon and splash size from `scripts/make-app-icon.mjs`.
-- `codemagic.yaml` describes the cloud iOS build and TestFlight upload. It has not run yet.
-- `store/` holds draft privacy, support and listing copy.
-- The app build hides the unbuilt bot mode and shows no player-typed text: opponents appear by seat color instead of their typed name (`src/multiplayer/nativeSafety.ts`).
-- The app connects to the production game server, which must allow the `capacitor://localhost` and `https://localhost` origins (`render.yaml`).
-- `appId` in `capacitor.config.ts` is a placeholder until the LLC domain is chosen.
-
-## Implemented rules
-
-- Standard 8x8 checkers movement on dark squares.
-- Optional forced-capture toggle for checker pieces.
-- With forced checker captures on, checker captures and multi-jumps are mandatory, but knight moves are still optional.
-- With forced checker captures off, no pieces are forced to capture.
-- Men crown into kings on the far row.
-- Each side starts with the normal 12 checkers plus one adjacent second-rank knight: Red on e2, Black on d7.
-- The knight moves and captures like a chess knight and is never forced to capture.
-- After a knight moves, that player's next turn must be a non-knight move before the knight is ready again.
-- Resting knights use a gray version of the same piece until their cooldown clears.
-- Checkers can jump and capture the knight like any other opposing piece.
-- A player wins when the opponent has no men or kings left; the opponent's knight can remain on the board.
-- A player also loses if they have no legal move, matching normal checkers lockout behavior.
-
-The game rules live in `src/game.ts`, separate from the React UI, so a later online version can reuse the same state transitions behind a network layer.
-
-## Piece art
-
-The knight and crown sprites are original renders made for this project with three.js (`art/`). Earlier versions used Wikimedia Commons pieces by Cburnett (CC BY-SA 3.0); those files were removed on 2026-10-17 and no longer ship.
+No license has been chosen yet. **All rights reserved; the source is public to read.**
